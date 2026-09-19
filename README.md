@@ -11,7 +11,7 @@ The public factories are cumulative:
 |------------------|-------|---------------------------------------------------------------------------------------------------|
 | `baseline`       | 1     | cycles, explicit dependency bans, configuration, beans, and boundary outputs                      |
 | `domainOriented` | 2     | Level 1 plus domain/application/API/infrastructure direction and model-only framework annotations |
-| `hexagonal`      | 3     | Level 2 plus onion direction, framework isolation, ports, adapters, and component-scan rules      |
+| `hexagonal`      | 3     | Level 2 plus onion direction, framework isolation, ports, and adapters                           |
 
 Choose the lowest tier that protects the system's likely changes. A higher
 tier includes every lower-tier rule.
@@ -24,7 +24,7 @@ domainOriented("com.acme.orders").check(CLASSES);
 
 `strictHexagonal(String)` and `laxHexagonal(String)` remain available on
 `HexagonalArchitectureRules` as Level 3 convenience factories. New code can
-use `hexagonal` with either a base package or a configured `PackageLayout`.
+use `hexagonal` with either a base package or a configured `HexagonalLayout`.
 
 ## Install
 
@@ -61,18 +61,22 @@ com.acme.orders.adapter.out..
 `basePackage` must be a concrete Java package name. It cannot contain
 wildcards or a trailing dot.
 
-The default vocabulary treats inbound adapters as API code and outbound or
-mixed adapters as infrastructure. Configuration is also infrastructure, but
-configuration rules find `@Configuration`, `@ConfigurationProperties`, and
-`@Bean` declarations by annotation rather than by a configuration package
-selector.
+Level 2 declares API and infrastructure groups independently. Level 3
+effectively treats inbound adapters as API code and outbound or mixed adapters
+as infrastructure. Configuration is also infrastructure, but configuration
+rules find `@Configuration`, `@ConfigurationProperties`, and `@Bean`
+declarations by annotation rather than by a configuration package selector.
 
 ## Configured layouts
 
-`PackageLayout` is an immutable snapshot. Build one with its mutable builder:
+Each tier has its own immutable cumulative snapshot and mutable builder:
 
 ```java
-PackageLayout layout = PackageLayout.builder("com.acme.orders")
+BaselineLayout baseline = BaselineLayout.builder("com.acme.orders")
+    .outputs("com.acme.orders.api..")
+    .build();
+
+DomainOrientedLayout domain = DomainOrientedLayout.builder(baseline)
     .applicationPackages("com.acme.orders.orders..") // replaces default
     .addApplicationPackages("com.acme.orders.shared..")
     .apiPackages("com.acme.orders.http..")
@@ -81,36 +85,49 @@ PackageLayout layout = PackageLayout.builder("com.acme.orders")
         "jakarta.persistence..",
         "jakarta.validation..",
         "com.fasterxml.jackson.annotation..")
-    .inboundAdapterPackages("com.acme.orders.http.adapter..")
-    .outboundAdapterPackages("com.acme.orders.persistence.adapter..")
-    .componentScanPackages("com.acme.orders.mapping..")
-    .componentScanExceptions(
-        "com.acme.orders.mapping.OrderMapper",
-        "com.acme.orders.mapping.OrderMapping")
-    .dependencyBans(PackageLayout.DependencyBan.of(
+    .dependencyBans(BaselineLayout.DependencyBan.of(
         "com.acme.orders.application..",
         "com.acme.orders.legacy.."))
+    .build();
+
+HexagonalLayout layout = HexagonalLayout.builder(domain)
+    .inboundAdapterPackages("com.acme.orders.http.adapter..")
+    .outboundAdapterPackages("com.acme.orders.persistence.adapter..")
     .build();
 
 HexagonalArchitectureRules.hexagonal(layout).check(CLASSES);
 ```
 
-Defaults:
+Level 1 defaults:
+
+- Outputs: `basePackage..`
+- Cycle pattern: `basePackage.(**)`
+
+Standalone Level 2 defaults:
 
 - Domain: `basePackage.domain..`
 - Application: `basePackage.application..`
-- API: `basePackage.api..` and inbound adapter packages
-- Infrastructure: `basePackage.infrastructure..`, outbound adapters, and mixed adapters
+- API: `basePackage.api..`
+- Infrastructure: `basePackage.infrastructure..`
+- Model framework namespaces: JPA, Jakarta/Javax validation, and Jackson annotations
+
+Standalone Level 3 adds:
+
 - Inbound ports: `basePackage.application.port.in..`
 - Outbound ports: `basePackage.application.port.out..`
-- Model framework namespaces: JPA, Jakarta/Javax validation, and Jackson annotations
+- Inbound adapters: `basePackage.adapter.in..`
+- Outbound adapters: `basePackage.adapter.out..`
 
 Every package group has replacement and append semantics. For example,
 `apiPackages(...)` replaces the group and `addApiPackages(...)` appends paths.
 The same pattern applies to `infrastructurePackages(...)`,
 `domainModelFrameworkPackages(...)`, application groups, adapter groups,
-`domain(...)`, and `outputs(...)`. `toBuilder()` starts an independent builder
-from an existing snapshot.
+`domain(...)`, and `outputs(...)`. Builders accepting a lower-tier layout copy
+that snapshot; `toBuilder()` starts an independent builder.
+
+Level 3 lower-layer checks use effective groups internally: declared API plus
+inbound adapters, and declared infrastructure plus outbound and mixed adapters.
+Public layout accessors expose only declared groups.
 
 Model-framework allowances apply only to annotation types used as metadata on
 domain classes. A runtime service, client, or other non-annotation type from
@@ -131,7 +148,7 @@ Dependency bans accept arbitrary source groups and scoped exceptions:
 ```java
 import java.util.List;
 
-PackageLayout.DependencyBan ban = PackageLayout.DependencyBan
+BaselineLayout.DependencyBan ban = BaselineLayout.DependencyBan
     .of(
         List.of("com.acme.orders.feature..", "com.acme.orders.workflow.."),
         List.of("com.acme.orders.legacy.."))
@@ -139,7 +156,7 @@ PackageLayout.DependencyBan ban = PackageLayout.DependencyBan
         "com.acme.orders.feature.LegacyBridge",
         "com.acme.orders.legacy.LegacyType");
 
-PackageLayout layout = PackageLayout.builder("com.acme.orders")
+BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
     .dependencyBans(ban)
     .build();
 ```
@@ -173,10 +190,11 @@ PackageLayout layout = PackageLayout.builder("com.acme.orders")
 - framework-free public port signatures;
 - `UseCase` and `Port` naming and visibility;
 - outbound adapter wiring, visibility, and containment;
-- component-scan restrictions.
+- the composition-root exception is not transitive. It applies to the explicit
+  configuration class, not to arbitrary domain or application classes it calls.
 
-The composition-root exception is not transitive. It applies to the explicit
-configuration class, not to arbitrary domain or application classes it calls.
+Component annotations are not package-layout selectors and do not trigger a
+separate selector rule.
 
 ## Use in tests
 

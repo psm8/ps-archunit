@@ -137,16 +137,18 @@ in domain classes.
 
 **Hexagonal**:
 The cumulative Level 3 rule tier. It adds onion direction, framework
-isolation, ports, adapters, and component-scan rules.
+isolation, ports, adapters, and adapter wiring/containment.
 
 **API package group**:
 Inbound delivery code that invokes application capabilities. By default it
-includes `basePackage.api..` and inbound adapter groups.
+includes `basePackage.api..` in Level 2. Level 3 lower-tier checks use the
+declared API group plus inbound adapter groups as an internal effective group.
 
 **Infrastructure package group**:
 Outbound adapters, persistence, clients, messaging, configuration, and
-framework integration. By default it includes `basePackage.infrastructure..`,
-outbound adapter groups, and mixed adapter groups.
+framework integration. By default it includes `basePackage.infrastructure..`
+in Level 2. Level 3 lower-tier checks use the declared infrastructure group
+plus outbound and mixed adapter groups as an internal effective group.
 
 **Model-framework package group**:
 Configured namespaces whose annotation types may be used as domain model
@@ -163,8 +165,26 @@ uses one direction-neutral mixed adapter group.
 owns cumulative Levels 1–2, and `HexagonalArchitectureRules` owns cumulative
 Levels 1–3.
 
-**Package layout**:
-`PackageLayout` is an immutable vocabulary snapshot. Its builder's package
-group methods replace defaults, while corresponding `add...` methods append
-patterns. Configuration is discovered from annotations, not represented as a
-package group.
+**Baseline layout**:
+The configuration vocabulary for Level 1. It describes technical package
+boundaries, cycle scopes, dependency bans, configuration and bean policy, and
+boundary outputs. It does not expose domain, application, port, or adapter
+concepts.
+
+**Domain-oriented layout**:
+The cumulative configuration vocabulary for Levels 1–2. It copies the
+baseline snapshot and adds domain, application, API, infrastructure, and
+model-framework package groups, dependency-direction exceptions, and framework
+namespace policy.
+
+**Hexagonal layout**:
+The cumulative configuration vocabulary for Levels 1–3. It copies the
+domain-oriented snapshot and adds ports and inbound, outbound, and mixed adapter
+groups, port exceptions, adapter exceptions, and naming suffixes.
+
+**Cumulative layout**:
+A higher-level layout retains lower-level configuration and adds only concepts
+owned by its level. Level 3 also treats inbound adapters as API boundaries and
+outbound or mixed adapters as infrastructure boundaries when applying lower
+level rules. Framework namespace policy and dependency-direction exceptions
+belong to the domain-oriented layout and are inherited by Level 3.

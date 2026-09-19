@@ -39,10 +39,12 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void domain_oriented_adds_application_direction() {
+		String basePackage = "io.github.psm8.archunit.fixtures.invalid.onion";
 		assertRuleFails(
-				domainOriented(PackageLayout.of(
-						"io.github.psm8.archunit.fixtures.invalid.onion")),
-				"io.github.psm8.archunit.fixtures.invalid.onion");
+				domainOriented(DomainOrientedLayout.builder(basePackage)
+						.infrastructurePackages(basePackage + ".adapter.out..")
+						.build()),
+				basePackage);
 	}
 
 	@Test
@@ -55,7 +57,7 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void domain_oriented_rejects_non_model_framework_dependencies() {
 		assertRuleFails(
-				domainOriented(PackageLayout.of(
+				domainOriented(DomainOrientedLayout.of(
 						"io.github.psm8.archunit.fixtures.invalid.framework")),
 				"io.github.psm8.archunit.fixtures.invalid.framework");
 	}
@@ -92,7 +94,7 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void domain_oriented_allows_configured_model_annotations() {
 		String basePackage = "io.github.psm8.archunit.fixtures.model";
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
 				.domainModelFrameworkPackages(basePackage + ".framework..")
 				.build();
@@ -105,7 +107,7 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void hexagonal_preserves_configured_model_annotation_allowance() {
 		String basePackage = "io.github.psm8.archunit.fixtures.model";
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
 				.domainModelFrameworkPackages(basePackage + ".framework..")
 				.build();
@@ -118,7 +120,7 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void domain_oriented_rejects_runtime_types_from_configured_model_namespace() {
 		String basePackage = "io.github.psm8.archunit.fixtures.model";
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
 				.domainModelFrameworkPackages(basePackage + ".framework..")
 				.build();
@@ -169,13 +171,13 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void custom_profile_accepts_valid_hexagonal_layout() {
-		hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.valid"))
+		hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.valid"))
 				.check(imported("io.github.psm8.archunit.fixtures.valid"));
 	}
 
 	@Test
 	void custom_profile_accepts_sealed_boundary_types_in_port_packages() {
-		hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.valid.sealed"))
+		hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.valid.sealed"))
 				.check(imported("io.github.psm8.archunit.fixtures.valid.sealed"));
 	}
 
@@ -188,42 +190,42 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void custom_profile_rejects_outward_application_dependency() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.onion")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.onion")),
 				"io.github.psm8.archunit.fixtures.invalid.onion");
 	}
 
 	@Test
 	void custom_profile_rejects_nested_package_cycle() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.cycle")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.cycle")),
 				"io.github.psm8.archunit.fixtures.invalid.cycle");
 	}
 
 	@Test
 	void custom_profile_rejects_framework_dependencies_in_core() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.framework")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.framework")),
 				"io.github.psm8.archunit.fixtures.invalid.framework");
 	}
 
 	@Test
 	void custom_profile_rejects_non_interface_port_class() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.portclass")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.portclass")),
 				"io.github.psm8.archunit.fixtures.invalid.portclass");
 	}
 
 	@Test
 	void custom_profile_rejects_wrong_port_names() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.naming")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.naming")),
 				"io.github.psm8.archunit.fixtures.invalid.naming");
 	}
 
 	@Test
 	void custom_profile_rejects_unwired_outbound_adapter() {
 		assertRuleFails(
-				hexagonal(PackageLayout.of("io.github.psm8.archunit.fixtures.invalid.adapter")),
+				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.adapter")),
 				"io.github.psm8.archunit.fixtures.invalid.adapter");
 	}
 
@@ -240,8 +242,8 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void package_layout_uses_feature_oriented_defaults() {
-		PackageLayout layout = PackageLayout.of("com.acme.orders");
+	void hexagonal_layout_uses_feature_oriented_defaults() {
+		HexagonalLayout layout = HexagonalLayout.of("com.acme.orders");
 
 		assertEquals(List.of("com.acme.orders.domain.."), layout.domain());
 		assertEquals(
@@ -255,12 +257,11 @@ class ArchitectureRuleTiersTest {
 				layout.outboundAdapterPackages());
 		assertEquals(List.of(), layout.mixedAdapterPackages());
 		assertEquals(
-				List.of("com.acme.orders.api..", "com.acme.orders.adapter.in.."),
+				List.of("com.acme.orders.api.."),
 				layout.apiPackages());
 		assertEquals(
 				List.of(
-						"com.acme.orders.infrastructure..",
-						"com.acme.orders.adapter.out.."),
+						"com.acme.orders.infrastructure.."),
 				layout.infrastructurePackages());
 		assertEquals(
 				List.of(
@@ -273,8 +274,79 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void baseline_api_does_not_expose_higher_tier_selectors() {
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> BaselineLayout.class.getMethod("domain"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> BaselineLayout.class.getMethod("apiPackages"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> BaselineLayout.class.getMethod("inboundAdapterPackages"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> BaselineLayout.class.getMethod("dependencyDirectionIgnores"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> BaselineLayout.Builder.class.getMethod(
+						"ignoreDependency", String.class, String.class));
+	}
+
+	@Test
+	void domain_oriented_defaults_exclude_adapter_groups() {
+		DomainOrientedLayout layout = DomainOrientedLayout.of("com.acme.orders");
+
+		assertEquals(List.of("com.acme.orders.api.."), layout.apiPackages());
+		assertEquals(
+				List.of("com.acme.orders.infrastructure.."),
+				layout.infrastructurePackages());
+	}
+
+	@Test
+	void framework_dependency_selector_replaces_defaults_but_keeps_model_coverage() {
+		DomainOrientedLayout layout = DomainOrientedLayout.builder("com.acme.orders")
+				.frameworkDependencyPackages()
+				.build();
+
+		assertFalse(layout.frameworkDependencyPackages().contains("org.springframework.."));
+		assertTrue(layout.frameworkDependencyPackages()
+				.contains("jakarta.persistence.."));
+	}
+
+	@Test
+	void promotion_copies_lower_snapshot_without_mutating_it() {
+		BaselineLayout baseline = BaselineLayout.builder("com.acme.orders")
+				.outputs("com.acme.orders.result..")
+				.build();
+
+		DomainOrientedLayout promoted = DomainOrientedLayout.builder(baseline)
+				.apiPackages("com.acme.orders.publicapi..")
+				.build();
+
+		assertEquals(List.of("com.acme.orders.result.."), baseline.outputs());
+		assertEquals(List.of("com.acme.orders.publicapi.."), promoted.apiPackages());
+		assertEquals(List.of("com.acme.orders.result.."), promoted.outputs());
+	}
+
+	@Test
+	void hexagonal_lower_groups_include_adapters_only_effectively() {
+		HexagonalLayout layout = HexagonalLayout.of("com.acme.orders");
+
+		assertEquals(List.of("com.acme.orders.api.."), layout.apiPackages());
+		assertEquals(
+				List.of("com.acme.orders.api..", "com.acme.orders.adapter.in.."),
+				layout.effectiveApiPackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.infrastructure..",
+						"com.acme.orders.adapter.out.."),
+				layout.effectiveInfrastructurePackages());
+	}
+
+	@Test
 	void application_package_configuration_replaces_then_adds_paths() {
-		PackageLayout layout = PackageLayout.builder("com.acme.orders")
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
 				.applicationPackages("com.acme.orders.feature..")
 				.addApplicationPackages("com.acme.orders.shared..")
 				.build();
@@ -286,7 +358,7 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void adapter_package_configuration_is_symmetric() {
-		PackageLayout layout = PackageLayout.builder("com.acme.orders")
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
 				.inboundAdapterPackages("com.acme.orders.http..")
 				.outboundAdapterPackages("com.acme.orders.persistence..")
 				.build();
@@ -299,7 +371,7 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void selectors_replace_with_varargs_and_append_with_canonical_names() {
-		PackageLayout layout = PackageLayout.builder("com.acme.orders")
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
 				.domain("com.acme.orders.domain.model..", "com.acme.orders.domain.service..")
 				.addDomains("com.acme.orders.domain.shared..")
 				.apiPackages(
@@ -347,7 +419,7 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void add_only_package_configuration_retains_feature_oriented_defaults() {
-		PackageLayout layout = PackageLayout.builder("com.acme.orders")
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
 				.addDomains("com.acme.orders.domain.shared..")
 				.addApplicationPackages("com.acme.orders.shared..")
 				.addInboundPortPackages("com.acme.orders.application.port.in.extra..")
@@ -391,8 +463,8 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void layout_exposes_only_explicit_dependency_bans() {
-		PackageLayout layout = PackageLayout.builder("com.acme.orders")
-				.dependencyBans(PackageLayout.DependencyBan.of(
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
+				.dependencyBans(BaselineLayout.DependencyBan.of(
 						List.of("com.acme.orders.domain.."),
 						List.of("com.acme.orders.legacy..")))
 				.build();
@@ -404,40 +476,22 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void configured_rejects_component_scanned_classes_except_documented_classes() {
+	void component_annotations_are_not_architecture_selectors() {
 		String basePackage = "io.github.psm8.archunit.fixtures.component";
-		PackageLayout layout = PackageLayout.builder(basePackage)
-				.componentScanPackages(basePackage + ".scanned..")
-				.componentScanExceptions(
-						basePackage + ".scanned.Mapper",
-						basePackage + ".scanned.ScannedMapper",
-						basePackage + ".scanned.ScannedService",
-						basePackage + ".scanned.AllowedComponent")
-				.build();
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage).build();
 
-		assertDoesNotThrow(() ->
-				hexagonal(layout).check(imported(basePackage)));
-	}
-
-	@Test
-	void configured_rejects_component_meta_annotations_without_exceptions() {
-		String basePackage = "io.github.psm8.archunit.fixtures.component";
-		PackageLayout layout = PackageLayout.builder(basePackage)
-				.componentScanPackages(basePackage + ".scanned..")
-				.build();
-
-		assertRuleFails(hexagonal(layout), basePackage);
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
 	}
 
 	@Test
 	void configured_applies_explicit_dependency_bans_with_scoped_exceptions() {
 		String basePackage = "io.github.psm8.archunit.fixtures.dependency";
-		PackageLayout.DependencyBan ban = PackageLayout.DependencyBan
+		BaselineLayout.DependencyBan ban = BaselineLayout.DependencyBan
 				.of(basePackage + ".source..", basePackage + ".forbidden..")
 				.ignoring(
 						basePackage + ".source.AllowedDependency",
 						basePackage + ".forbidden.ForbiddenType");
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.dependencyBans(ban)
 				.build();
 
@@ -447,7 +501,7 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void mixed_adapters_are_a_third_onion_layer() {
 		String basePackage = "io.github.psm8.archunit.fixtures.mixed";
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.mixedAdapterPackages(basePackage + ".adapter.mixed..")
 				.build();
 

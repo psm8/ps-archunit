@@ -13,15 +13,12 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 final class ArchitectureRuleSupport {
-	static final String COMPONENT =
-			"org.springframework.stereotype.Component";
 	static final String CONFIGURATION =
 			"org.springframework.context.annotation.Configuration";
 	static final String BEAN =
@@ -34,7 +31,19 @@ final class ArchitectureRuleSupport {
 	private ArchitectureRuleSupport() {
 	}
 
-	static void requireLayout(PackageLayout layout) {
+	static void requireLayout(BaselineLayout layout) {
+		requireNonNullLayout(layout);
+	}
+
+	static void requireLayout(DomainOrientedLayout layout) {
+		requireNonNullLayout(layout);
+	}
+
+	static void requireLayout(HexagonalLayout layout) {
+		requireNonNullLayout(layout);
+	}
+
+	private static void requireNonNullLayout(Object layout) {
 		if (layout == null) {
 			throw new IllegalArgumentException("layout must not be null");
 		}
@@ -42,7 +51,7 @@ final class ArchitectureRuleSupport {
 
 	static ArchCondition<JavaClass> haveNoDependenciesOn(
 			List<String> banned,
-			List<PackageLayout.PatternPair> exceptions) {
+			List<BaselineLayout.PatternPair> exceptions) {
 		return new ArchCondition<>("not depend on banned packages") {
 			@Override
 			public void check(JavaClass source, ConditionEvents events) {
@@ -60,7 +69,7 @@ final class ArchitectureRuleSupport {
 	static ArchCondition<JavaClass> haveNoNonModelFrameworkDependencies(
 			List<String> frameworkPackages,
 			List<String> modelFrameworkPackages,
-			List<PackageLayout.PatternPair> exceptions) {
+			List<BaselineLayout.PatternPair> exceptions) {
 		return new ArchCondition<>("not depend on non-model framework packages") {
 			@Override
 			public void check(JavaClass source, ConditionEvents events) {
@@ -83,7 +92,7 @@ final class ArchitectureRuleSupport {
 	static ArchCondition<JavaClass> haveNoFrameworkDependenciesExceptCompositionRoots(
 			List<String> frameworkPackages,
 			List<String> modelFrameworkPackages,
-			List<PackageLayout.PatternPair> exceptions) {
+			List<BaselineLayout.PatternPair> exceptions) {
 		return new ArchCondition<>("not depend on framework packages outside composition roots") {
 			@Override
 			public void check(JavaClass source, ConditionEvents events) {
@@ -118,18 +127,6 @@ final class ArchitectureRuleSupport {
 				if (!implementsPort) {
 					events.add(SimpleConditionEvent.violated(item,
 							item.getName() + " does not implement an outbound port"));
-				}
-			}
-		};
-	}
-
-	static ArchCondition<JavaClass> notBeComponentAnnotated() {
-		return new ArchCondition<>("not be meta-annotated with " + COMPONENT) {
-			@Override
-			public void check(JavaClass item, ConditionEvents events) {
-				if (hasComponentAnnotation(item, new HashSet<>())) {
-					events.add(SimpleConditionEvent.violated(item,
-							item.getName() + " is a Spring component"));
 				}
 			}
 		};
@@ -232,33 +229,25 @@ final class ArchitectureRuleSupport {
 	static boolean isIgnored(
 			JavaClass source,
 			JavaClass target,
-			List<PackageLayout.PatternPair> exceptions) {
+			List<BaselineLayout.PatternPair> exceptions) {
 		return exceptions.stream().anyMatch(exception ->
 				classPattern(exception.source()).test(source)
 						&& classPattern(exception.target()).test(target));
 	}
 
-	static String[] portPackages(PackageLayout layout) {
+	static String[] portPackages(HexagonalLayout layout) {
 		List<String> ports = new ArrayList<>(layout.inboundPortPackages());
 		ports.addAll(layout.outboundPortPackages());
 		return ports.toArray(String[]::new);
 	}
 
-	static String[] adapterPackages(PackageLayout layout) {
+	static String[] adapterPackages(HexagonalLayout layout) {
 		List<String> packages = new ArrayList<>();
 		packages.addAll(layout.inboundAdapterPackages());
 		packages.addAll(layout.outboundAdapterPackages());
 		packages.addAll(layout.mixedAdapterPackages());
 		return packages.stream().filter(ArchitectureRuleSupport::present)
 				.distinct().toArray(String[]::new);
-	}
-
-	static List<PackageLayout.PatternPair> combinedIgnores(
-			List<PackageLayout.PatternPair> first,
-			List<PackageLayout.PatternPair> second) {
-		List<PackageLayout.PatternPair> result = new ArrayList<>(first);
-		result.addAll(second);
-		return result;
 	}
 
 	static boolean isInAnyPackage(
@@ -326,20 +315,6 @@ final class ArchitectureRuleSupport {
 		return noClasses().should().beAnnotatedWith(NO_OPTIONAL_RULES)
 				.as("no optional architecture rules are configured")
 				.allowEmptyShould(true);
-	}
-
-	private static boolean hasComponentAnnotation(JavaClass type, Set<String> visited) {
-		if (!visited.add(type.getName())) {
-			return false;
-		}
-		for (JavaAnnotation<?> annotation : type.getAnnotations()) {
-			JavaClass annotationType = annotation.getRawType();
-			if (COMPONENT.equals(annotationType.getName())
-					|| hasComponentAnnotation(annotationType, visited)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static DescribedPredicate<JavaClass> portPredicate(

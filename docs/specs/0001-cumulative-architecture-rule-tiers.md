@@ -28,7 +28,8 @@ Expose three cumulative architecture rule tiers:
 3. `hexagonal`: Level 1 plus Level 2 plus Level 3, dependency-inverted domain
    architecture.
 
-Each tier accepts either a base package or an explicit `PackageLayout`.
+Each tier accepts a base package or its matching typed layout:
+`BaselineLayout`, `DomainOrientedLayout`, or `HexagonalLayout`.
 Strict and lax hexagonal convenience profiles remain available as Level 3
 factories. Package layout gains broad API and infrastructure groups.
 Configuration stops being a logical package group. Documentation and ADR
@@ -48,8 +49,8 @@ content describe the same model.
    stronger profile never silently removes baseline protections.
 5. As a library consumer, I want a base-package factory for each tier, so that
    common layouts need minimal configuration.
-6. As a library consumer, I want a `PackageLayout` factory for each tier, so
-   that feature-first and non-default package layouts remain configurable.
+6. As a library consumer, I want a typed layout factory for each tier, so that
+   feature-first and non-default package layouts remain configurable.
 7. As a library consumer, I want missing package groups to produce no-op rules,
    so that partial applications and incremental migrations can be checked.
 8. As a library consumer, I want domain dependencies on application,
@@ -96,9 +97,9 @@ content describe the same model.
     against outbound ports, so that adapters cannot silently bypass contracts.
 23. As a library consumer, I want adapter visibility and containment checked,
     so that adapter implementations do not become accidental public API.
-24. As a library consumer, I want component-scan checks at Level 3, so that
-    framework-managed behavior does not leak into configured adapter groups
-    without an explicit exception.
+24. As a library consumer, I want component annotations allowed in outer
+    adapter, API, and infrastructure code, so they do not become accidental
+    package selectors.
 25. As a library consumer, I want existing strict directional adapter behavior
     preserved, so that migration does not change established Level 3 checks.
 26. As a library consumer, I want existing lax mixed-adapter behavior preserved,
@@ -157,9 +158,10 @@ content describe the same model.
   configuration proxy mode, bean placement and return-type checks, and
   immutable boundary output shape.
 - Level 2 owns coarse dependency direction between domain, application, API,
-  and infrastructure groups. Domain is inward of application. API is an
-  inbound adapter group. Infrastructure contains outbound adapters,
-  persistence, clients, messaging, configuration, and framework integration.
+  and infrastructure groups. Domain is inward of application. API is the
+  inbound-facing group. In Level 3, inbound adapters join its effective
+  boundary. Infrastructure contains outbound adapters, persistence, clients,
+  messaging, configuration, and framework integration.
 - Level 2 permits infrastructure dependencies on domain and application.
   Level 2 does not require ports for infrastructure dependencies.
 - Level 2 model-framework allowances are restricted to annotation metadata on
@@ -169,9 +171,10 @@ content describe the same model.
   violations.
 - Add configurable API, infrastructure, and domain-model-framework package
   groups. Replacement methods replace defaults. `add...` methods append.
-- Default API packages include the base `api` group and inbound adapter
-  packages. Default infrastructure packages include the base `infrastructure`
-  group plus outbound and mixed adapter packages.
+- Standalone Level 2 API defaults include only the base `api` group, and
+  infrastructure defaults include only the base `infrastructure` group.
+  Level 3 lower-tier checks add inbound adapters to the effective API group
+  and outbound/mixed adapters to the effective infrastructure group.
 - Keep directional and mixed adapter selectors needed by Level 3 wiring and
   containment rules.
 - Remove configuration and configuration-properties package selectors,
@@ -179,16 +182,15 @@ content describe the same model.
   concern enforced through direct configuration and bean annotations.
 - Level 3 adds onion direction, strict framework isolation, framework-free port
   contracts, port naming and visibility, outbound adapter wiring, adapter
-  visibility, adapter containment, and component-scan rules.
+  visibility, and adapter containment.
 - Level 3 framework isolation applies to domain and application classes.
   Explicit classes annotated as configuration, and their bean methods, are
   composition-root exceptions only for their assembly dependencies. The
   exception is not transitive to other domain or application classes.
 - Package groups remain optional. Rules targeting empty groups are no-ops.
-- Existing output suffix, dependency-ban, cycle-ignore, port-signature
-  exception, adapter exception, component-scan exception, bean return-type,
-  and configuration visibility customization remains supported unless removed
-  explicitly above.
+- Existing output suffix, dependency-ban, cycle-ignore, port-signature,
+  adapter exception, bean return-type, and configuration visibility
+  customization remains supported unless removed explicitly above.
 - Record the current cumulative-tier decision in ADR 0001.
 - Update current architecture Markdown, glossary, README, and ADR content to
   use the same tier and package vocabulary.
@@ -206,11 +208,13 @@ content describe the same model.
   classes using Spring or runtime framework types.
 - Add valid and invalid composition-root fixtures to prove the Level 3
   exception is narrow and non-transitive.
-- Verify custom API, infrastructure, and model-framework package selectors,
-  replacement behavior, append behavior, and missing-group no-op behavior.
+- Verify typed cumulative layouts, custom API, infrastructure, and
+  model-framework package selectors, replacement behavior, append behavior,
+  promotion isolation, effective Level 3 groups, and missing-group no-op
+  behavior.
 - Preserve regression coverage for strict and lax aliases, onion direction,
-  cycles, ports, adapter wiring and containment, component scanning, outputs,
-  beans, configuration behavior, and dependency bans.
+  cycles, ports, adapter wiring and containment, component annotations,
+  outputs, beans, configuration behavior, and dependency bans.
 - Validate external behavior only: rule pass/fail results, layout snapshots,
   factory validation, and public compatibility behavior.
 - Run the project test suite, full Maven verification, whitespace/diff checks,
@@ -236,7 +240,9 @@ content describe the same model.
 ## Further Notes
 
 - Highest test seam is the public factory plus imported fixture classes.
-- `PackageLayout` remains an immutable snapshot with a mutable builder.
+- `BaselineLayout`, `DomainOrientedLayout`, and `HexagonalLayout` are immutable
+  cumulative snapshots with mutable builders. Higher builders copy lower
+  snapshots; they do not inherit from them.
 - The hard removal of configuration selectors is an intentional public API
   change. It prevents configuration from being mistaken for a logical
   architecture layer.

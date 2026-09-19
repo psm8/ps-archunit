@@ -23,10 +23,10 @@ Split the public rule factories across three tier classes:
   domain/application/API/infrastructure direction and model-only framework
   annotations;
 - `HexagonalArchitectureRules` owns cumulative Levels 1, 2, and 3:
-  onion direction, framework isolation, ports, adapters, and component
-  scanning.
+  onion direction, framework isolation, ports, and adapters.
 
-Each tier exposes `String` and `PackageLayout` factories where applicable.
+Each tier exposes `String` and matching typed-layout factories:
+`BaselineLayout`, `DomainOrientedLayout`, and `HexagonalLayout`.
 Higher tiers compose lower tiers and never remove lower-tier protections.
 
 `strictHexagonal(String)` and `laxHexagonal(String)` remain Level 3
@@ -38,8 +38,13 @@ Shared ArchUnit conditions, predicates, matching, validation, and composition
 helpers are package-private implementation support. They are not public
 architecture tiers.
 
-`PackageLayout` exposes API, infrastructure, and domain-model-framework
-groups. Replacement methods replace defaults; `add...` methods append.
+The three immutable cumulative layouts expose only the selectors owned by their
+tier. Higher builders copy lower snapshots. Level 2 defaults include domain,
+application, base API, base infrastructure, and model-framework groups; they
+do not include adapter defaults. Level 3 adds ports and adapters. Replacement
+methods replace defaults; `add...` methods append. Level 3 uses declared API
+plus inbound adapters and declared infrastructure plus outbound/mixed adapters
+as internal effective groups. Component annotations are not package selectors.
 Configuration is discovered from annotations instead of being represented as a
 package group.
 

@@ -21,15 +21,15 @@ public final class HexagonalArchitectureRules {
 	}
 
 	public static ArchRule hexagonal(String basePackage) {
-		return hexagonal(PackageLayout.of(basePackage));
+		return hexagonal(HexagonalLayout.of(basePackage));
 	}
 
 	public static ArchRule strictHexagonal(String basePackage) {
-		return hexagonal(PackageLayout.of(basePackage));
+		return hexagonal(HexagonalLayout.of(basePackage));
 	}
 
 	public static ArchRule laxHexagonal(String basePackage) {
-		PackageLayout layout = PackageLayout.builder(basePackage)
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.inboundAdapterPackages()
 				.outboundAdapterPackages()
 				.mixedAdapterPackages(basePackage + ".adapter..")
@@ -37,22 +37,24 @@ public final class HexagonalArchitectureRules {
 		return hexagonal(layout);
 	}
 
-	public static ArchRule hexagonal(PackageLayout layout) {
+	public static ArchRule hexagonal(HexagonalLayout layout) {
 		ArchitectureRuleSupport.requireLayout(layout);
 		return ArchitectureRuleSupport.combine(List.of(
-						DomainOrientedArchitectureRules.domainOriented(layout),
+						DomainOrientedArchitectureRules.domainOriented(
+								layout.domainOriented(),
+								layout.effectiveApiPackages(),
+								layout.effectiveInfrastructurePackages()),
 						onionRule(layout),
 						noFrameworkDependencies(layout),
 						portRules(layout),
 						outboundAdaptersImplementPorts(layout),
 						adapterRules(layout),
-						adapterContainment(layout),
-						componentScanRules(layout)))
+						adapterContainment(layout)))
 				.as("the hexagonal architecture under " + layout.basePackage())
 				.because("dependencies point inward from adapters to application to domain");
 	}
 
-	private static ArchRule onionRule(PackageLayout layout) {
+	private static ArchRule onionRule(HexagonalLayout layout) {
 		var rule = onionArchitecture().withOptionalLayers(true);
 		if (!layout.domain().isEmpty()) {
 			rule.domainModels(layout.domain().toArray(String[]::new));
@@ -69,7 +71,7 @@ public final class HexagonalArchitectureRules {
 		if (!layout.mixedAdapterPackages().isEmpty()) {
 			rule.adapter("mixed", layout.mixedAdapterPackages().toArray(String[]::new));
 		}
-		for (PackageLayout.PatternPair ignored : layout.dependencyDirectionIgnores()) {
+		for (BaselineLayout.PatternPair ignored : layout.dependencyDirectionIgnores()) {
 			rule = rule.ignoreDependency(
 					ArchitectureRuleSupport.classPattern(ignored.source()),
 					ArchitectureRuleSupport.classPattern(ignored.target()));
@@ -77,17 +79,17 @@ public final class HexagonalArchitectureRules {
 		return rule;
 	}
 
-	private static ArchRule noFrameworkDependencies(PackageLayout layout) {
+	private static ArchRule noFrameworkDependencies(HexagonalLayout layout) {
 		List<String> sources = new ArrayList<>();
 		sources.addAll(layout.domain());
 		sources.addAll(layout.applicationPackages());
-		if (sources.isEmpty() || layout.frameworkTransportPackages().isEmpty()) {
+		if (sources.isEmpty() || layout.frameworkDependencyPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
 		return classes().that()
 				.resideInAnyPackage(sources.toArray(String[]::new))
 				.should(ArchitectureRuleSupport.haveNoFrameworkDependenciesExceptCompositionRoots(
-						layout.frameworkTransportPackages(),
+						layout.frameworkDependencyPackages(),
 						layout.domainModelFrameworkPackages(),
 						layout.dependencyDirectionIgnores()))
 				.as("domain and application classes have no framework dependencies"
@@ -95,7 +97,7 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule portRules(PackageLayout layout) {
+	private static ArchRule portRules(HexagonalLayout layout) {
 		return CompositeArchRule.of(portPackagesContainInterfaces(layout))
 				.and(inboundPortNaming(layout))
 				.and(outboundPortNaming(layout))
@@ -103,7 +105,7 @@ public final class HexagonalArchitectureRules {
 				.and(frameworkFreePortSignatures(layout));
 	}
 
-	private static ArchRule portPackagesContainInterfaces(PackageLayout layout) {
+	private static ArchRule portPackagesContainInterfaces(HexagonalLayout layout) {
 		String[] inbound = layout.inboundPortPackages().toArray(String[]::new);
 		String[] outbound = layout.outboundPortPackages().toArray(String[]::new);
 		List<ArchRule> rules = new ArrayList<>();
@@ -124,7 +126,7 @@ public final class HexagonalArchitectureRules {
 		return ArchitectureRuleSupport.combine(rules);
 	}
 
-	private static ArchRule inboundPortNaming(PackageLayout layout) {
+	private static ArchRule inboundPortNaming(HexagonalLayout layout) {
 		if (layout.inboundPortPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
@@ -136,7 +138,7 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule outboundPortNaming(PackageLayout layout) {
+	private static ArchRule outboundPortNaming(HexagonalLayout layout) {
 		if (layout.outboundPortPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
@@ -148,28 +150,28 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule portPublic(PackageLayout layout) {
+	private static ArchRule portPublic(HexagonalLayout layout) {
 		return classes().that(portPredicate(layout))
 				.should().bePublic()
 				.as("ports are public contracts")
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule frameworkFreePortSignatures(PackageLayout layout) {
+	private static ArchRule frameworkFreePortSignatures(HexagonalLayout layout) {
 		String[] ports = ArchitectureRuleSupport.portPackages(layout);
-		if (ports.length == 0 || layout.frameworkTransportPackages().isEmpty()) {
+		if (ports.length == 0 || layout.frameworkDependencyPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
 		return classes().that(portPredicate(layout))
 				.should(ArchitectureRuleSupport.haveFrameworkFreeSignatures(
-						layout.frameworkTransportPackages(),
+						layout.frameworkDependencyPackages(),
 						ArchitectureRuleSupport.adapterPackages(layout),
 						layout.portSignatureExceptions()))
 				.as("port signatures are framework and adapter free")
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule outboundAdaptersImplementPorts(PackageLayout layout) {
+	private static ArchRule outboundAdaptersImplementPorts(HexagonalLayout layout) {
 		if (layout.outboundAdapterPackages().isEmpty()
 				|| layout.outboundPortPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
@@ -183,7 +185,7 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule adapterRules(PackageLayout layout) {
+	private static ArchRule adapterRules(HexagonalLayout layout) {
 		String[] adapters = ArchitectureRuleSupport.adapterPackages(layout);
 		if (adapters.length == 0) {
 			return ArchitectureRuleSupport.emptyRule();
@@ -197,7 +199,7 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule adapterContainment(PackageLayout layout) {
+	private static ArchRule adapterContainment(HexagonalLayout layout) {
 		String adapterRoot = layout.basePackage() + ".adapter..";
 		String[] configured = ArchitectureRuleSupport.adapterPackages(layout);
 		if (configured.length == 0) {
@@ -211,23 +213,8 @@ public final class HexagonalArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule componentScanRules(PackageLayout layout) {
-		if (layout.componentScanPackages().isEmpty()) {
-			return ArchitectureRuleSupport.emptyRule();
-		}
-		return classes().that().resideInAnyPackage(
-						layout.componentScanPackages().toArray(String[]::new))
-				.and(DescribedPredicate.not(
-						ArchitectureRuleSupport.classPattern(
-								layout.componentScanExceptions())))
-				.should(ArchitectureRuleSupport.notBeComponentAnnotated())
-				.as("component scanning is absent from configured package groups"
-						+ " except documented classes")
-				.allowEmptyShould(true);
-	}
-
 	private static DescribedPredicate<com.tngtech.archunit.core.domain.JavaClass> portPredicate(
-			PackageLayout layout) {
+			HexagonalLayout layout) {
 		return ArchitectureRuleSupport.configuredPortPredicate(
 						layout.inboundPortPackages(), layout.useCaseSuffix())
 				.or(ArchitectureRuleSupport.configuredPortPredicate(

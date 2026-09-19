@@ -15,25 +15,39 @@ public final class DomainOrientedArchitectureRules {
 	}
 
 	public static ArchRule domainOriented(String basePackage) {
-		return domainOriented(PackageLayout.of(basePackage));
+		return domainOriented(DomainOrientedLayout.of(basePackage));
 	}
 
-	public static ArchRule domainOriented(PackageLayout layout) {
+	public static ArchRule domainOriented(DomainOrientedLayout layout) {
 		ArchitectureRuleSupport.requireLayout(layout);
+		return domainOriented(
+				layout,
+				layout.apiPackages(),
+				layout.infrastructurePackages());
+	}
+
+	static ArchRule domainOriented(
+			DomainOrientedLayout layout,
+			List<String> effectiveApiPackages,
+			List<String> effectiveInfrastructurePackages) {
 		return ArchitectureRuleSupport.combine(List.of(
-						BaselineArchitectureRules.baseline(layout),
-						domainDependencyRules(layout),
+						BaselineArchitectureRules.baseline(layout.baseline()),
+						domainDependencyRules(
+								layout, effectiveApiPackages, effectiveInfrastructurePackages),
 						domainModelFrameworkRules(layout)))
 				.as("the domain-oriented architecture under " + layout.basePackage())
 				.because("domain and application boundaries protect business behavior");
 	}
 
-	private static ArchRule domainDependencyRules(PackageLayout layout) {
+	private static ArchRule domainDependencyRules(
+			DomainOrientedLayout layout,
+			List<String> apiPackages,
+			List<String> infrastructurePackages) {
 		List<ArchRule> rules = new ArrayList<>();
 		List<String> domainOutside = new ArrayList<>();
 		domainOutside.addAll(layout.applicationPackages());
-		domainOutside.addAll(layout.apiPackages());
-		domainOutside.addAll(layout.infrastructurePackages());
+		domainOutside.addAll(apiPackages);
+		domainOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
 				rules,
 				layout.domain(),
@@ -42,8 +56,8 @@ public final class DomainOrientedArchitectureRules {
 				"domain classes do not depend on application, API, or infrastructure");
 
 		List<String> applicationOutside = new ArrayList<>();
-		applicationOutside.addAll(layout.apiPackages());
-		applicationOutside.addAll(layout.infrastructurePackages());
+		applicationOutside.addAll(apiPackages);
+		applicationOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
 				rules,
 				layout.applicationPackages(),
@@ -53,18 +67,18 @@ public final class DomainOrientedArchitectureRules {
 
 		List<String> apiOutside = new ArrayList<>();
 		apiOutside.addAll(layout.domain());
-		apiOutside.addAll(layout.infrastructurePackages());
+		apiOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
 				rules,
-				layout.apiPackages(),
+				apiPackages,
 				apiOutside,
 				layout,
 				"API classes depend inward on application only");
 
 		addDependencyDirectionRule(
 				rules,
-				layout.infrastructurePackages(),
-				layout.apiPackages(),
+				infrastructurePackages,
+				apiPackages,
 				layout,
 				"infrastructure classes do not depend on API");
 		return ArchitectureRuleSupport.combine(rules);
@@ -74,7 +88,7 @@ public final class DomainOrientedArchitectureRules {
 			List<ArchRule> rules,
 			List<String> sourcePackages,
 			List<String> bannedPackages,
-			PackageLayout layout,
+			DomainOrientedLayout layout,
 			String description) {
 		if (sourcePackages.isEmpty() || bannedPackages.isEmpty()) {
 			return;
@@ -88,15 +102,15 @@ public final class DomainOrientedArchitectureRules {
 				.allowEmptyShould(true));
 	}
 
-	private static ArchRule domainModelFrameworkRules(PackageLayout layout) {
+	private static ArchRule domainModelFrameworkRules(DomainOrientedLayout layout) {
 		if (layout.domain().isEmpty()
-				|| layout.frameworkTransportPackages().isEmpty()) {
+				|| layout.frameworkDependencyPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
 		return classes().that()
 				.resideInAnyPackage(layout.domain().toArray(String[]::new))
 				.should(ArchitectureRuleSupport.haveNoNonModelFrameworkDependencies(
-						layout.frameworkTransportPackages(),
+						layout.frameworkDependencyPackages(),
 						layout.domainModelFrameworkPackages(),
 						layout.dependencyDirectionIgnores()))
 				.as("domain classes use only model framework annotations")

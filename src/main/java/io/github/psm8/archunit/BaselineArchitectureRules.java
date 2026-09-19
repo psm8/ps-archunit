@@ -19,10 +19,10 @@ public final class BaselineArchitectureRules {
 	}
 
 	public static ArchRule baseline(String basePackage) {
-		return baseline(PackageLayout.of(basePackage));
+		return baseline(BaselineLayout.of(basePackage));
 	}
 
-	public static ArchRule baseline(PackageLayout layout) {
+	public static ArchRule baseline(BaselineLayout layout) {
 		ArchitectureRuleSupport.requireLayout(layout);
 		return ArchitectureRuleSupport.combine(List.of(
 						cycleRules(layout),
@@ -34,14 +34,14 @@ public final class BaselineArchitectureRules {
 				.because("baseline rules protect technical boundaries and package cycles");
 	}
 
-	private static ArchRule cycleRules(PackageLayout layout) {
+	private static ArchRule cycleRules(BaselineLayout layout) {
 		List<ArchRule> rules = new ArrayList<>();
 		for (String pattern : layout.cyclePatterns()) {
 			var rule = slices().matching(pattern)
 					.should().beFreeOfCycles()
 					.as("packages matching " + pattern + " are free of dependency cycles")
 					.because("package boundaries remain cycle-free");
-			for (PackageLayout.PatternPair ignored : layout.cycleDependencyIgnores()) {
+			for (BaselineLayout.PatternPair ignored : layout.cycleDependencyIgnores()) {
 				rule = rule.ignoreDependency(
 						ArchitectureRuleSupport.classPattern(ignored.source()),
 						ArchitectureRuleSupport.classPattern(ignored.target()));
@@ -51,16 +51,14 @@ public final class BaselineArchitectureRules {
 		return ArchitectureRuleSupport.combine(rules);
 	}
 
-	private static ArchRule dependencyBans(PackageLayout layout) {
+	private static ArchRule dependencyBans(BaselineLayout layout) {
 		List<ArchRule> rules = new ArrayList<>();
-		for (PackageLayout.DependencyBan ban : layout.dependencyBans()) {
+		for (BaselineLayout.DependencyBan ban : layout.dependencyBans()) {
 			rules.add(classes().that()
 					.resideInAnyPackage(ban.sourcePackages().toArray(String[]::new))
 					.should(ArchitectureRuleSupport.haveNoDependenciesOn(
 							ban.bannedPackages(),
-							ArchitectureRuleSupport.combinedIgnores(
-									layout.dependencyDirectionIgnores(),
-									ban.ignoredDependencies())))
+							ban.ignoredDependencies()))
 					.as("classes under " + ban.sourcePackages()
 							+ " do not depend on " + ban.bannedPackages())
 					.allowEmptyShould(true));
@@ -68,13 +66,13 @@ public final class BaselineArchitectureRules {
 		return ArchitectureRuleSupport.combine(rules);
 	}
 
-	private static ArchRule configurationRules(PackageLayout layout) {
+	private static ArchRule configurationRules(BaselineLayout layout) {
 		return CompositeArchRule.of(configurationVisibility(layout))
 				.and(configurationPropertiesVisibility(layout))
 				.and(configurationProxyBeanMethods(layout));
 	}
 
-	private static ArchRule configurationVisibility(PackageLayout layout) {
+	private static ArchRule configurationVisibility(BaselineLayout layout) {
 		return classes().that().areAnnotatedWith(ArchitectureRuleSupport.CONFIGURATION)
 				.and(DescribedPredicate.not(
 						ArchitectureRuleSupport.classPattern(
@@ -84,7 +82,7 @@ public final class BaselineArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule configurationPropertiesVisibility(PackageLayout layout) {
+	private static ArchRule configurationPropertiesVisibility(BaselineLayout layout) {
 		return classes().that()
 				.areAnnotatedWith(ArchitectureRuleSupport.CONFIGURATION_PROPERTIES)
 				.and(DescribedPredicate.not(
@@ -95,14 +93,14 @@ public final class BaselineArchitectureRules {
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule configurationProxyBeanMethods(PackageLayout layout) {
+	private static ArchRule configurationProxyBeanMethods(BaselineLayout layout) {
 		return classes().that().areAnnotatedWith(ArchitectureRuleSupport.CONFIGURATION)
 				.should(ArchitectureRuleSupport.useLiteConfigurationMode())
 				.as("configuration uses proxyBeanMethods = false")
 				.allowEmptyShould(true);
 	}
 
-	private static ArchRule beanRules(PackageLayout layout) {
+	private static ArchRule beanRules(BaselineLayout layout) {
 		return CompositeArchRule.of(methods()
 						.that().areAnnotatedWith(ArchitectureRuleSupport.BEAN)
 						.should().beDeclaredInClassesThat()
@@ -117,7 +115,7 @@ public final class BaselineArchitectureRules {
 						.allowEmptyShould(true));
 	}
 
-	private static ArchRule outputShape(PackageLayout layout) {
+	private static ArchRule outputShape(BaselineLayout layout) {
 		if (layout.outputs().isEmpty()
 				|| !ArchitectureRuleSupport.present(layout.outputSuffix())) {
 			return ArchitectureRuleSupport.emptyRule();
