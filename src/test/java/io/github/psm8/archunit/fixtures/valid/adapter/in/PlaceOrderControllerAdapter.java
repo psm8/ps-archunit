@@ -2,14 +2,14 @@ package io.github.psm8.archunit.fixtures.valid.adapter.in;
 
 import io.github.psm8.archunit.fixtures.valid.application.port.in.PlaceOrderUseCase;
 
-public final class PlaceOrderControllerAdapter {
-    private final PlaceOrderUseCase useCase;
+final class PlaceOrderControllerAdapter {
+	private final PlaceOrderUseCase useCase;
 
-    public PlaceOrderControllerAdapter(PlaceOrderUseCase useCase) {
-        this.useCase = useCase;
-    }
+	public PlaceOrderControllerAdapter(PlaceOrderUseCase useCase) {
+		this.useCase = useCase;
+	}
 
-    public void invoke(String orderId) {
-        useCase.execute(orderId);
-    }
+	public void invoke(String orderId) {
+		useCase.execute(orderId);
+	}
 }
