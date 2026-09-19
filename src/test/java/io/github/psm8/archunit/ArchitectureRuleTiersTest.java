@@ -294,6 +294,36 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void hexagonal_api_selector_is_configured_before_promotion() {
+		String basePackage = "com.acme.orders";
+		DomainOrientedLayout domain = DomainOrientedLayout.builder(basePackage)
+				.apiPackages(basePackage + ".http..")
+				.build();
+
+		HexagonalLayout layout = HexagonalLayout.builder(domain).build();
+
+		assertEquals(List.of(basePackage + ".http.."), layout.apiPackages());
+	}
+
+	@Test
+	void hexagonal_layout_hides_domain_oriented_api_surface() {
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> HexagonalLayout.class.getMethod("domainOriented"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> HexagonalLayout.class.getMethod("apiPackages"));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> HexagonalLayout.Builder.class.getMethod(
+						"apiPackages", String[].class));
+		assertThrows(
+				NoSuchMethodException.class,
+				() -> HexagonalLayout.Builder.class.getMethod(
+						"addApiPackages", String[].class));
+	}
+
+	@Test
 	void domain_oriented_defaults_exclude_adapter_groups() {
 		DomainOrientedLayout layout = DomainOrientedLayout.of("com.acme.orders");
 
@@ -371,7 +401,7 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void selectors_replace_with_varargs_and_append_with_canonical_names() {
-		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
+		DomainOrientedLayout domain = DomainOrientedLayout.builder("com.acme.orders")
 				.domain("com.acme.orders.domain.model..", "com.acme.orders.domain.service..")
 				.addDomains("com.acme.orders.domain.shared..")
 				.apiPackages(
@@ -384,6 +414,8 @@ class ArchitectureRuleTiersTest {
 				.addInfrastructurePackages("com.acme.orders.testinfra..")
 				.domainModelFrameworkPackages("jakarta.persistence..")
 				.addDomainModelFrameworkPackages("jakarta.validation..")
+				.build();
+		HexagonalLayout layout = HexagonalLayout.builder(domain)
 				.outputs("com.acme.orders.api..", "com.acme.orders.messaging..")
 				.addOutputs("com.acme.orders.other..")
 				.build();
@@ -419,16 +451,18 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void add_only_package_configuration_retains_feature_oriented_defaults() {
-		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
+		DomainOrientedLayout domain = DomainOrientedLayout.builder("com.acme.orders")
 				.addDomains("com.acme.orders.domain.shared..")
 				.addApplicationPackages("com.acme.orders.shared..")
+				.addApiPackages("com.acme.orders.publicapi..")
+				.addInfrastructurePackages("com.acme.orders.database..")
+				.addDomainModelFrameworkPackages("com.acme.orders.model.framework..")
+				.build();
+		HexagonalLayout layout = HexagonalLayout.builder(domain)
 				.addInboundPortPackages("com.acme.orders.application.port.in.extra..")
 				.addOutboundPortPackages("com.acme.orders.application.port.out.extra..")
 				.addInboundAdapterPackages("com.acme.orders.http..")
 				.addOutboundAdapterPackages("com.acme.orders.persistence..")
-				.addApiPackages("com.acme.orders.publicapi..")
-				.addInfrastructurePackages("com.acme.orders.database..")
-				.addDomainModelFrameworkPackages("com.acme.orders.model.framework..")
 				.addOutputs("com.acme.orders.result..")
 				.build();
 

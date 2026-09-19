@@ -143,6 +143,8 @@ isolation, ports, adapters, and adapter wiring/containment.
 Inbound delivery code that invokes application capabilities. By default it
 includes `basePackage.api..` in Level 2. Level 3 lower-tier checks use the
 declared API group plus inbound adapter groups as an internal effective group.
+API package customization belongs to the domain-oriented architecture level;
+hexagonal architecture inherits that boundary.
 
 **Infrastructure package group**:
 Outbound adapters, persistence, clients, messaging, configuration, and
@@ -186,5 +188,6 @@ groups, port exceptions, adapter exceptions, and naming suffixes.
 A higher-level layout retains lower-level configuration and adds only concepts
 owned by its level. Level 3 also treats inbound adapters as API boundaries and
 outbound or mixed adapters as infrastructure boundaries when applying lower
-level rules. Framework namespace policy and dependency-direction exceptions
-belong to the domain-oriented layout and are inherited by Level 3.
+level rules. API package customization, framework namespace policy, and
+dependency-direction exceptions belong to the domain-oriented layout and are
+inherited by Level 3.

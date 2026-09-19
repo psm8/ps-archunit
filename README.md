@@ -98,6 +98,10 @@ HexagonalLayout layout = HexagonalLayout.builder(domain)
 HexagonalArchitectureRules.hexagonal(layout).check(CLASSES);
 ```
 
+API package customization belongs to `DomainOrientedLayout`. A hexagonal layout
+inherits that snapshot through promotion and uses it internally, but does not
+expose `apiPackages(...)` methods on its public API.
+
 Level 1 defaults:
 
 - Outputs: `basePackage..`
@@ -118,8 +122,9 @@ Standalone Level 3 adds:
 - Inbound adapters: `basePackage.adapter.in..`
 - Outbound adapters: `basePackage.adapter.out..`
 
-Every package group has replacement and append semantics. For example,
-`apiPackages(...)` replaces the group and `addApiPackages(...)` appends paths.
+Each configurable package group has replacement and append semantics. For
+example, domain-oriented API configuration uses `apiPackages(...)` to replace
+the group and `addApiPackages(...)` to append paths.
 The same pattern applies to `infrastructurePackages(...)`,
 `domainModelFrameworkPackages(...)`, application groups, adapter groups,
 `domain(...)`, and `outputs(...)`. Builders accepting a lower-tier layout copy
@@ -127,7 +132,8 @@ that snapshot; `toBuilder()` starts an independent builder.
 
 Level 3 lower-layer checks use effective groups internally: declared API plus
 inbound adapters, and declared infrastructure plus outbound and mixed adapters.
-Public layout accessors expose only declared groups.
+The hexagonal layout exposes the inherited API boundary through rule behavior,
+not through a repeated public API selector.
 
 Model-framework allowances apply only to annotation types used as metadata on
 domain classes. A runtime service, client, or other non-annotation type from

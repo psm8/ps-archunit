@@ -83,7 +83,7 @@ public final class HexagonalLayout {
 		return copy;
 	}
 
-	public DomainOrientedLayout domainOriented() {
+	DomainOrientedLayout domainOriented() {
 		return domainOriented;
 	}
 
@@ -99,7 +99,7 @@ public final class HexagonalLayout {
 		return domainOriented.applicationPackages();
 	}
 
-	public List<String> apiPackages() {
+	List<String> apiPackages() {
 		return domainOriented.apiPackages();
 	}
 
@@ -317,12 +317,12 @@ public final class HexagonalLayout {
 			return this;
 		}
 
-		public Builder apiPackages(String... values) {
+		Builder apiPackages(String... values) {
 			domainOriented.apiPackages(values);
 			return this;
 		}
 
-		public Builder addApiPackages(String... values) {
+		Builder addApiPackages(String... values) {
 			domainOriented.addApiPackages(values);
 			return this;
 		}

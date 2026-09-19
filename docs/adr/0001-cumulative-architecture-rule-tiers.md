@@ -44,9 +44,11 @@ application, base API, base infrastructure, and model-framework groups; they
 do not include adapter defaults. Level 3 adds ports and adapters. Replacement
 methods replace defaults; `add...` methods append. Level 3 uses declared API
 plus inbound adapters and declared infrastructure plus outbound/mixed adapters
-as internal effective groups. Component annotations are not package selectors.
-Configuration is discovered from annotations instead of being represented as a
-package group.
+as internal effective groups. API package customization remains on the
+domain-oriented layout; the hexagonal layout inherits it through promotion and
+does not repeat the API selector on its public surface. Component annotations
+are not package selectors. Configuration is discovered from annotations instead
+of being represented as a package group.
 
 ## Consequences
 

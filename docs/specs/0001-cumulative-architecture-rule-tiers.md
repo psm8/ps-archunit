@@ -171,6 +171,9 @@ content describe the same model.
   violations.
 - Add configurable API, infrastructure, and domain-model-framework package
   groups. Replacement methods replace defaults. `add...` methods append.
+- Keep API package customization on `DomainOrientedLayout`. `HexagonalLayout`
+  inherits a promoted domain-oriented snapshot and uses the API boundary
+  internally without repeating API selector methods on its public surface.
 - Standalone Level 2 API defaults include only the base `api` group, and
   infrastructure defaults include only the base `infrastructure` group.
   Level 3 lower-tier checks add inbound adapters to the effective API group
@@ -210,8 +213,8 @@ content describe the same model.
   exception is narrow and non-transitive.
 - Verify typed cumulative layouts, custom API, infrastructure, and
   model-framework package selectors, replacement behavior, append behavior,
-  promotion isolation, effective Level 3 groups, and missing-group no-op
-  behavior.
+  promotion isolation, HexagonalLayout API-surface hiding, effective Level 3
+  groups, and missing-group no-op behavior.
 - Preserve regression coverage for strict and lax aliases, onion direction,
   cycles, ports, adapter wiring and containment, component annotations,
   outputs, beans, configuration behavior, and dependency bans.
