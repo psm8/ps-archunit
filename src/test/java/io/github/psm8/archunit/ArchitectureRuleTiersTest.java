@@ -77,10 +77,33 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void domain_oriented_rejects_api_dependencies_on_domain() {
+	void domain_oriented_allows_api_dependencies_on_domain() {
+		String basePackage = "io.github.psm8.archunit.fixtures.valid";
+
+		assertDoesNotThrow(() -> domainOriented(basePackage)
+				.check(imported(basePackage)));
+	}
+
+	@Test
+	void hexagonal_allows_inbound_adapter_dependencies_on_domain() {
+		String basePackage = "io.github.psm8.archunit.fixtures.valid";
+
+		assertDoesNotThrow(() -> hexagonal(basePackage)
+				.check(imported(basePackage)));
+	}
+
+	@Test
+	void domain_oriented_rejects_api_dependencies_on_infrastructure() {
 		String basePackage = "io.github.psm8.archunit.fixtures.invalid.direction.api";
 
 		assertRuleFails(domainOriented(basePackage), basePackage);
+	}
+
+	@Test
+	void hexagonal_rejects_inbound_adapter_dependencies_on_infrastructure() {
+		String basePackage = "io.github.psm8.archunit.fixtures.invalid.direction.inbound";
+
+		assertRuleFails(hexagonal(basePackage), basePackage);
 	}
 
 	@Test

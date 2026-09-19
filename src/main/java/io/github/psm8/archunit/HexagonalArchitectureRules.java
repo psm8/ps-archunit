@@ -51,7 +51,7 @@ public final class HexagonalArchitectureRules {
 						adapterRules(layout),
 						adapterContainment(layout)))
 				.as("the hexagonal architecture under " + layout.basePackage())
-				.because("dependencies point inward from adapters to application to domain");
+				.because("dependencies point inward from adapters toward application and domain");
 	}
 
 	private static ArchRule onionRule(HexagonalLayout layout) {
@@ -62,8 +62,8 @@ public final class HexagonalArchitectureRules {
 		if (!layout.applicationPackages().isEmpty()) {
 			rule.applicationServices(layout.applicationPackages().toArray(String[]::new));
 		}
-		if (!layout.inboundAdapterPackages().isEmpty()) {
-			rule.adapter("in", layout.inboundAdapterPackages().toArray(String[]::new));
+		if (!layout.effectiveApiPackages().isEmpty()) {
+			rule.adapter("in", layout.effectiveApiPackages().toArray(String[]::new));
 		}
 		if (!layout.outboundAdapterPackages().isEmpty()) {
 			rule.adapter("out", layout.outboundAdapterPackages().toArray(String[]::new));

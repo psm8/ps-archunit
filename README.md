@@ -66,6 +66,10 @@ effectively treats inbound adapters as API code and outbound or mixed adapters
 as infrastructure. Configuration is also infrastructure, but configuration
 rules find `@Configuration`, `@ConfigurationProperties`, and `@Bean`
 declarations by annotation rather than by a configuration package selector.
+API and inbound adapter code may depend on application and domain types, but
+not on infrastructure types. This permits translation adapters to normalize
+external representations without coupling delivery code to technical
+mechanisms.
 
 ## Configured layouts
 
@@ -182,7 +186,7 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 
 - domain does not depend on application, API, or infrastructure;
 - application does not depend on API or infrastructure;
-- API does not depend on domain or infrastructure;
+- API may depend on application and domain, but not infrastructure;
 - infrastructure does not depend on API;
 - infrastructure may depend on domain and application;
 - domain may use configured model annotations, but not runtime framework types.

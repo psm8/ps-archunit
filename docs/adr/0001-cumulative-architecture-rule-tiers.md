@@ -50,6 +50,13 @@ does not repeat the API selector on its public surface. Component annotations
 are not package selectors. Configuration is discovered from annotations instead
 of being represented as a package group.
 
+
+Level 2 API direction bans only dependencies on infrastructure. API packages
+and inbound adapters may depend directly on application and domain types. This
+keeps dependency direction distinct from the optional project policy that
+requires every delivery adapter to enter through an application use case, and
+supports translation adapters that normalize external representations into
+domain types.
 ## Consequences
 
 Consumers can select the lowest tier that protects the system's likely

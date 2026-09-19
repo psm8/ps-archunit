@@ -35,7 +35,9 @@ package or naming convention.
 _Avoid_: Assuming every application needs a `service` package.
 
 **API layer**:
-Inbound adapters and transport-facing code that invokes application use cases.
+Inbound adapters and transport-facing code. It may depend on application and
+domain types, but not infrastructure types. It commonly invokes application
+use cases and may translate external representations into domain types.
 It is outside the core.
 
 **Infrastructure layer**:
@@ -140,11 +142,12 @@ The cumulative Level 3 rule tier. It adds onion direction, framework
 isolation, ports, adapters, and adapter wiring/containment.
 
 **API package group**:
-Inbound delivery code that invokes application capabilities. By default it
-includes `basePackage.api..` in Level 2. Level 3 lower-tier checks use the
-declared API group plus inbound adapter groups as an internal effective group.
-API package customization belongs to the domain-oriented architecture level;
-hexagonal architecture inherits that boundary.
+Inbound delivery code that may depend on application and domain types, but not
+infrastructure types. By default it includes `basePackage.api..` in Level 2.
+Level 3 lower-tier checks use the declared API group plus inbound adapter
+groups as an internal effective group. API package customization belongs to
+the domain-oriented architecture level; hexagonal architecture inherits that
+boundary.
 
 **Infrastructure package group**:
 Outbound adapters, persistence, clients, messaging, configuration, and

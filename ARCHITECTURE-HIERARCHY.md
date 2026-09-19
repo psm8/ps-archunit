@@ -81,6 +81,11 @@ Level 3 costs ports, adapters, indirection, composition, and additional tests.
 It pays off when mechanism replacement, mechanism proliferation, or
 infrastructure coupling threatens domain stability or domain testing.
 
+Level 3 does not require every inbound adapter to reach the domain through an
+application port. Inbound adapters may use domain types for translation or
+normalization, while remaining forbidden from depending on infrastructure
+mechanisms.
+
 ## Selection guide
 
 | Situation                                                      | Choose                                    | Reason                                                               |

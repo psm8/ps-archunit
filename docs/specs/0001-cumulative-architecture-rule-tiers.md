@@ -59,9 +59,10 @@ content describe the same model.
 9. As a library consumer, I want application dependencies on API and
    infrastructure rejected at Level 2, so that use-case orchestration is not
    shaped by delivery or implementation mechanisms.
-10. As a library consumer, I want API code restricted to application-facing
-    dependencies at Level 2, so that inbound adapters invoke use cases instead
-    of reaching into other layers.
+10. As a library consumer, I want API code allowed to depend on application
+    and domain types but not infrastructure at Level 2, so that inbound
+    adapters can translate external representations without coupling to
+    technical mechanisms.
 11. As a library consumer, I want infrastructure code prevented from depending
     on API code at Level 2, so that outbound mechanisms do not depend on
     inbound delivery details.
@@ -159,9 +160,10 @@ content describe the same model.
   immutable boundary output shape.
 - Level 2 owns coarse dependency direction between domain, application, API,
   and infrastructure groups. Domain is inward of application. API is the
-  inbound-facing group. In Level 3, inbound adapters join its effective
-  boundary. Infrastructure contains outbound adapters, persistence, clients,
-  messaging, configuration, and framework integration.
+  inbound-facing group and may depend on application and domain, but not
+  infrastructure. In Level 3, inbound adapters join its effective boundary.
+  Infrastructure contains outbound adapters, persistence, clients, messaging,
+  configuration, and framework integration.
 - Level 2 permits infrastructure dependencies on domain and application.
   Level 2 does not require ports for infrastructure dependencies.
 - Level 2 model-framework allowances are restricted to annotation metadata on
@@ -207,6 +209,8 @@ content describe the same model.
   includes both lower tiers.
 - Add valid and invalid fixtures for domain/application/API/infrastructure
   direction.
+- Include valid API and inbound-adapter fixtures that depend directly on
+  domain types, plus an invalid API-to-infrastructure fixture.
 - Add valid model classes using default model annotations and invalid model
   classes using Spring or runtime framework types.
 - Add valid and invalid composition-root fixtures to prove the Level 3

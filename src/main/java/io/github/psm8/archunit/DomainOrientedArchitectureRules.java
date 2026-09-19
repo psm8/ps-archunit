@@ -66,14 +66,13 @@ public final class DomainOrientedArchitectureRules {
 				"application classes do not depend on API or infrastructure");
 
 		List<String> apiOutside = new ArrayList<>();
-		apiOutside.addAll(layout.domain());
 		apiOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
 				rules,
 				apiPackages,
 				apiOutside,
 				layout,
-				"API classes depend inward on application only");
+				"API classes depend on application or domain, not infrastructure");
 
 		addDependencyDirectionRule(
 				rules,
