@@ -60,13 +60,21 @@ final class LayoutSupport {
 	}
 
 	static String requiredTypeName(String value) {
+		return requiredTypeName(value, "application interface bean type");
+	}
+
+	static String requiredAnnotationTypeName(String value) {
+		return requiredTypeName(value, "annotation type");
+	}
+
+	private static String requiredTypeName(String value, String label) {
 		if (value == null
 				|| value.isBlank()
 				|| !value.equals(value.trim())
 				|| !SourceVersion.isName(value)
 				|| value.indexOf('.') <= 0) {
 			throw new IllegalArgumentException(
-					"application interface bean type must be an exact Java type name: " + value);
+					label + " must be an exact Java type name: " + value);
 		}
 		return value;
 	}

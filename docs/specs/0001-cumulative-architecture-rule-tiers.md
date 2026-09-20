@@ -143,6 +143,16 @@ content describe the same model.
 38. As a contributor, I want validation to include tests, verification,
     documentation searches, and diff checks, so that code and written contracts
     stay synchronized.
+39. As a library consumer, I want to opt into transaction-annotation placement
+    checks at Level 2, so that transaction markers stay on application
+    boundaries without making a framework annotation mandatory for every
+    consumer.
+40. As a library consumer, I want the transaction annotation name and allowed
+    package patterns configured explicitly, so that the generic library does
+    not depend on Spring or assume one transaction framework.
+41. As a library consumer, I want framework and adapter annotations on port
+    parameter declarations rejected, so that parameter metadata cannot bypass
+    the framework-free port contract.
 
 ## Implementation Decisions
 
@@ -200,6 +210,17 @@ content describe the same model.
 - Level 3 adds onion direction, strict framework isolation, framework-free port
   contracts, port naming and visibility, outbound adapter wiring, adapter
   visibility, and adapter containment.
+- Level 2 transaction placement is opt-in. A configured exact annotation type
+  and explicit package patterns are required together. The rule checks direct
+  declaration annotations on classes and methods and enforces placement only;
+  it does not infer transaction semantics or atomicity. Level 3 inherits this
+  configuration.
+- Level 3 framework isolation permits the exact configured transaction
+  annotation only when the source class is in a configured transaction
+  package. Other framework dependencies remain violations.
+- Level 3 port signature checks include method parameter declaration
+  annotations. Whole-port signature exceptions continue to skip the complete
+  signature check. Type-use annotations are outside this change.
 - Level 3 framework isolation applies to domain and application classes.
   Explicit classes annotated as configuration, and their bean methods, are
   composition-root exceptions only for their assembly dependencies. The
@@ -252,6 +273,10 @@ content describe the same model.
   cover concrete application returns, external interfaces, rejected local
   interfaces, exact allowlisting, invalid selector values, and package-prefix
   ownership boundaries.
+- Add valid and invalid transaction-placement fixtures, partial-configuration
+  failures, inherited Level 3 configuration, and framework-isolation coverage.
+  Add a port fixture with a framework annotation on a parameter declaration
+  and preserve whole-port signature exception coverage.
 - Validate external behavior only: rule pass/fail results, layout snapshots,
   factory validation, and public compatibility behavior.
 - Run the project test suite, full Maven verification, whitespace/diff checks,

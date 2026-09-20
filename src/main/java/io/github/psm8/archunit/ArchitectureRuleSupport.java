@@ -6,6 +6,7 @@ import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMember;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaParameter;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.CompositeArchRule;
@@ -120,6 +121,20 @@ final class ArchitectureRuleSupport {
 			List<String> frameworkPackages,
 			List<String> modelFrameworkPackages,
 			List<BaselineLayout.PatternPair> exceptions) {
+		return haveNoFrameworkDependenciesExceptCompositionRoots(
+				frameworkPackages,
+				modelFrameworkPackages,
+				exceptions,
+				null,
+				List.of());
+	}
+
+	static ArchCondition<JavaClass> haveNoFrameworkDependenciesExceptCompositionRoots(
+			List<String> frameworkPackages,
+			List<String> modelFrameworkPackages,
+			List<BaselineLayout.PatternPair> exceptions,
+			String allowedAnnotation,
+			List<String> allowedAnnotationPackages) {
 		return new ArchCondition<>("not depend on framework packages outside composition roots") {
 			@Override
 			public void check(JavaClass source, ConditionEvents events) {
@@ -131,9 +146,39 @@ final class ArchitectureRuleSupport {
 					if (isInAnyPackage(target, frameworkPackages)
 							&& !isModelAnnotationDependency(
 							source, target, modelFrameworkPackages)
+							&& !isAllowedAnnotationDependency(
+							source,
+							target,
+							allowedAnnotation,
+							allowedAnnotationPackages)
 							&& !isIgnored(source, target, exceptions)) {
 						events.add(SimpleConditionEvent.violated(source,
 								dependency.getDescription()));
+					}
+				}
+			}
+		};
+	}
+
+	static ArchCondition<JavaClass> haveConfiguredAnnotationOnlyInPackages(
+			String annotationName,
+			List<String> allowedPackages) {
+		return new ArchCondition<>("use " + annotationName
+				+ " only in configured transaction packages") {
+			@Override
+			public void check(JavaClass source, ConditionEvents events) {
+				if (!matchesAny(source.getPackageName(), allowedPackages)
+						&& hasAnnotation(source, annotationName)) {
+					events.add(SimpleConditionEvent.violated(source,
+							source.getName() + " uses " + annotationName
+									+ " outside configured transaction packages"));
+				}
+				for (JavaMethod method : source.getMethods()) {
+					if (!matchesAny(source.getPackageName(), allowedPackages)
+							&& hasAnnotation(method, annotationName)) {
+						events.add(SimpleConditionEvent.violated(method,
+								method.getFullName() + " uses " + annotationName
+										+ " outside configured transaction packages"));
 					}
 				}
 			}
@@ -181,6 +226,17 @@ final class ArchitectureRuleSupport {
 							events.add(SimpleConditionEvent.violated(method,
 									method.getFullName() + " uses "
 											+ annotation.getRawType().getName()));
+						}
+					}
+					for (JavaParameter parameter : method.getParameters()) {
+						for (JavaAnnotation<?> annotation : parameter.getAnnotations()) {
+							if (isInAnyPackage(
+									annotation.getRawType(), frameworkPackages, adapterPackages)) {
+								events.add(SimpleConditionEvent.violated(method,
+										method.getFullName() + " uses "
+												+ annotation.getRawType().getName()
+												+ " on a parameter"));
+							}
 						}
 					}
 				}
@@ -258,6 +314,32 @@ final class ArchitectureRuleSupport {
 				.map(JavaMember::getAnnotations)
 				.flatMap(Set::stream)
 				.anyMatch(annotation -> annotation.getRawType().equals(target));
+	}
+
+	private static boolean isAllowedAnnotationDependency(
+			JavaClass source,
+			JavaClass target,
+			String allowedAnnotation,
+			List<String> allowedPackages) {
+		if (allowedAnnotation == null
+				|| !matchesAny(source.getPackageName(), allowedPackages)
+				|| !target.isAnnotation()
+				|| !target.getName().equals(allowedAnnotation)) {
+			return false;
+		}
+		return hasAnnotation(source, allowedAnnotation)
+				|| source.getMethods().stream()
+				.anyMatch(method -> hasAnnotation(method, allowedAnnotation));
+	}
+
+	private static boolean hasAnnotation(JavaClass source, String annotationName) {
+		return source.getAnnotations().stream()
+				.anyMatch(annotation -> annotation.getRawType().getName().equals(annotationName));
+	}
+
+	private static boolean hasAnnotation(JavaMethod method, String annotationName) {
+		return method.getAnnotations().stream()
+				.anyMatch(annotation -> annotation.getRawType().getName().equals(annotationName));
 	}
 
 	static boolean isCompositionRoot(JavaClass source) {

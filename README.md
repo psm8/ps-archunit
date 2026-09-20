@@ -117,6 +117,9 @@ DomainOrientedLayout domain = DomainOrientedLayout.builder(baseline)
         "jakarta.persistence..",
         "jakarta.validation..",
         "com.fasterxml.jackson.annotation..")
+    .transactionAnnotation(
+        "org.springframework.transaction.annotation.Transactional")
+    .transactionPackages("com.acme.orders.application..")
     .dependencyBans(BaselineLayout.DependencyBan.of(
         "com.acme.orders.application..",
         "com.acme.orders.legacy.."))
@@ -187,6 +190,19 @@ domain classes. A runtime service, client, or other non-annotation type from
 an allowlisted namespace is still rejected by `domainOriented` and
 `hexagonal`.
 
+Transaction placement is an opt-in Level 2 policy. Configure both an exact
+annotation type name with `transactionAnnotation(...)` and explicit package
+patterns with `transactionPackages(...)`. The builder rejects partial
+configuration. The rule checks declaration annotations on classes and methods
+and only enforces placement; it does not infer transaction boundaries or
+prove atomicity. Package patterns support the `{base}` macro.
+
+Level 3 inherits the transaction policy from `DomainOrientedLayout`. When it
+is configured, the exact transaction annotation is the only additional
+framework annotation allowed on class or method declarations in the configured
+packages for domain and application/core framework isolation. All other
+framework dependencies remain violations.
+
 Adapters are split into `inboundAdapterPackages(...)`,
 `outboundAdapterPackages(...)`, and the direction-neutral third layer
 `mixedAdapterPackages(...)`. Directional outbound adapters must implement an
@@ -233,6 +249,8 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - infrastructure does not depend on API;
 - infrastructure may depend on domain and application;
 - domain may use configured model annotations, but not runtime framework types.
+- optionally, the configured transaction annotation may be used only on
+  classes and methods in the configured transaction packages.
 - every class under the base package belongs to at least one configured
   architecture group.
 
@@ -241,8 +259,10 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - all Level 1 and Level 2 rules;
 - onion dependency direction;
 - framework isolation for domain and application code;
+- inherited opt-in transaction placement from `DomainOrientedLayout`;
 - explicit `@Configuration` composition roots may assemble framework objects;
-- framework-free public port signatures;
+- framework-free public port signatures, including parameter declaration
+  annotations. Type-use annotations are outside this check;
 - `UseCase` and `Port` naming and visibility;
 - outbound adapter wiring, visibility, and containment;
 - the composition-root exception is not transitive. It applies to the explicit

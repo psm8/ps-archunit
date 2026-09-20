@@ -101,6 +101,23 @@ Level 2 costs more domain modeling, boundary decisions, shared language, and
 tests. It pays off when business behavior changes often or mistakes in that
 behavior are expensive.
 
+Transaction placement is an optional Level 2 policy, not a default package
+assumption. A consumer can configure one exact transaction annotation name and
+the package patterns where that annotation is allowed:
+
+```java
+DomainOrientedLayout layout = DomainOrientedLayout.builder("com.acme.orders")
+    .transactionAnnotation(
+        "org.springframework.transaction.annotation.Transactional")
+    .transactionPackages("{base}.application..")
+    .build();
+```
+
+Both settings are required together. The rule checks direct declaration
+annotations on classes and methods and enforces placement only. It does not
+infer the intended transaction boundary, atomicity, rollback behavior, or
+outbox guarantees.
+
 ## 3. Dependency-inverted domain architecture
 
 Level 2 is also exposed to multiple or volatile external mechanisms, such as
@@ -120,6 +137,11 @@ promise of rich DDD, and they are not interchangeable package layouts.
 Level 3 costs ports, adapters, indirection, composition, and additional tests.
 It pays off when mechanism replacement, mechanism proliferation, or
 infrastructure coupling threatens domain stability or domain testing.
+
+Level 3 inherits any configured Level 2 transaction-placement policy. The
+configured transaction annotation is allowed as a narrow framework-isolation
+exception only in the configured packages; other framework dependencies remain
+forbidden in domain and application/core code.
 
 Level 3 does not require every inbound adapter to reach the domain through an
 application port. Inbound adapters may use domain types for translation or

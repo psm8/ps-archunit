@@ -155,6 +155,14 @@ public final class HexagonalLayout {
 		return domainOriented.outputSuffix();
 	}
 
+	public String transactionAnnotation() {
+		return domainOriented.transactionAnnotation();
+	}
+
+	public List<String> transactionPackages() {
+		return domainOriented.transactionPackages();
+	}
+
 	public List<String> inboundPortPackages() {
 		return inboundPortPackages;
 	}

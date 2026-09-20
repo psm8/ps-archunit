@@ -111,7 +111,12 @@ structurally:
   application/core classes.
 - Level 3 allows a narrow, explicit composition-root exception for assembling
   framework objects. The exception is not transitive.
-- Port signatures must not expose framework or adapter types.
+- Port signatures must not expose framework or adapter types, including
+  declaration annotations on parameters. Whole-port exceptions remain
+  available for documented legacy boundaries.
+- Level 2 can opt into placement checks for one exact transaction annotation
+  in explicit package groups. Level 3 inherits that policy and permits the
+  configured annotation as a narrow framework-isolation exception.
 
 This captures the presentation's most portable recommendation: technical
 mechanisms may be used at the edges, but they should not silently become
@@ -239,7 +244,7 @@ are indirectly supported, but are not fully enforced by generic rules.
 | Use explicit, lightweight Spring configuration. | Level 1 checks configuration visibility, `@Bean` placement, declared return-type exposure, and `proxyBeanMethods = false`. The library intentionally has no Spring runtime dependency. | Strong for the selected Spring conventions; it does not validate the whole application bootstrap. |
 | Inject external dependencies at the boundary. | Ports, adapter contracts, framework-free signatures, and direction rules protect the boundary. | Structural support, but constructor injection itself is not a universal rule. |
 | Use value objects and strong types instead of primitive-heavy models. | DDD concepts and hierarchy documents support explicit business modeling. | Guidance only; ArchUnit cannot reliably infer semantic type strength. |
-| Put transaction orchestration at the application/use-case boundary. | `CONTEXT.md` describes application orchestration and transactions; no generic rule proves transaction placement or atomicity. | Documented and convention-friendly, not enforced. |
+| Put transaction orchestration at the application/use-case boundary. | Level 2 can opt into exact transaction-annotation placement in explicit package groups. Level 3 inherits the policy and keeps the configured annotation as a narrow framework-isolation exception. | Placement is structurally enforced when configured; transaction semantics, atomicity, and runtime behavior remain outside generic rules. |
 | Use commands and handlers when orchestration benefits from them. | Application and port groups can contain such classes, but the repository does not require a command/handler layout. | Intentionally optional. |
 | Separate ORM models from domain models when ORM coupling becomes costly. | Framework isolation and model-annotation rules support the direction, but no rule requires a separate persistence model or mapper. | Partially protected, intentionally flexible. |
 | Distinguish domain events from technical or persistence events. | `DDD-CONCEPTS.md` and `ARCHITECTURE-AXES.md` document the distinction. | Documentation only. |
@@ -284,10 +289,12 @@ pretend that package naming is semantic validation.
 ### Transaction, consistency, and delivery guarantees
 
 The presentation discusses application-level orchestration, persistence,
-domain events, and the practical consequences of asynchronous work. The
-repository does not verify:
+domain events, and the practical consequences of asynchronous work. When a
+consumer opts into the transaction placement policy, the repository verifies
+only the configured annotation's class/method placement. It does not verify:
 
-- that one use case has the intended transaction boundary;
+- that one use case has the intended transaction boundary beyond annotation
+  placement;
 - that multiple writes commit atomically;
 - optimistic locking or aggregate version checks;
 - outbox publication;

@@ -95,7 +95,9 @@ public final class HexagonalArchitectureRules {
 				.should(ArchitectureRuleSupport.haveNoFrameworkDependenciesExceptCompositionRoots(
 						layout.frameworkDependencyPackages(),
 						layout.domainModelFrameworkPackages(),
-						layout.dependencyDirectionIgnores()))
+						layout.dependencyDirectionIgnores(),
+						layout.transactionAnnotation(),
+						layout.transactionPackages()))
 				.as("domain and application classes have no framework dependencies"
 						+ " except explicit composition roots")
 				.allowEmptyShould(true);

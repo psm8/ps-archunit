@@ -16,8 +16,11 @@ public final class DomainOrientedLayout {
 	private final List<String> domainModelFrameworkPackages;
 	private final List<String> frameworkDependencyPackages;
 	private final List<BaselineLayout.PatternPair> dependencyDirectionIgnores;
+	private final String transactionAnnotation;
+	private final List<String> transactionPackages;
 
 	private DomainOrientedLayout(Builder builder) {
+		validateTransactionConfiguration(builder);
 		baseline = builder.baseline.build();
 		domain = LayoutSupport.resolvePatterns(builder.domain, basePackage());
 		applicationPackages = LayoutSupport.resolvePatterns(builder.applicationPackages, basePackage());
@@ -26,6 +29,8 @@ public final class DomainOrientedLayout {
 		domainModelFrameworkPackages = LayoutSupport.resolvePatterns(builder.domainModelFrameworkPackages, basePackage());
 		frameworkDependencyPackages = LayoutSupport.resolvePatterns(builder.frameworkDependencyPackages, basePackage());
 		dependencyDirectionIgnores = resolvePatternPairs(builder.dependencyDirectionIgnores, basePackage());
+		transactionAnnotation = builder.transactionAnnotation;
+		transactionPackages = LayoutSupport.resolvePatterns(builder.transactionPackages, basePackage());
 	}
 
 	public static Builder builder(String basePackage) {
@@ -65,6 +70,12 @@ public final class DomainOrientedLayout {
 		copy.apiConfigured = true;
 		copy.infrastructureConfigured = true;
 		copy.domainModelFrameworkConfigured = true;
+		if (transactionAnnotation != null) {
+			copy.transactionAnnotation(transactionAnnotation);
+		}
+		if (transactionPackagesConfigured()) {
+			copy.transactionPackages(transactionPackages.toArray(String[]::new));
+		}
 		return copy;
 	}
 
@@ -136,6 +147,14 @@ public final class DomainOrientedLayout {
 		return dependencyDirectionIgnores;
 	}
 
+	public String transactionAnnotation() {
+		return transactionAnnotation;
+	}
+
+	public List<String> transactionPackages() {
+		return transactionPackages;
+	}
+
 	public static final class Builder {
 		private final BaselineLayout.Builder baseline;
 		private final List<String> domain = new ArrayList<>();
@@ -146,12 +165,15 @@ public final class DomainOrientedLayout {
 		private final List<String> frameworkDependencyPackages = new ArrayList<>();
 		private final List<BaselineLayout.PatternPair> dependencyDirectionIgnores =
 				new ArrayList<>();
+		private final List<String> transactionPackages = new ArrayList<>();
+		private String transactionAnnotation;
 		private boolean domainConfigured;
 		private boolean applicationConfigured;
 		private boolean apiConfigured;
 		private boolean infrastructureConfigured;
 		private boolean domainModelFrameworkConfigured;
 		private boolean frameworkDependencyConfigured;
+		private boolean transactionPackagesConfigured;
 
 		private Builder(BaselineLayout.Builder baseline) {
 			this.baseline = baseline;
@@ -278,6 +300,23 @@ public final class DomainOrientedLayout {
 			return this;
 		}
 
+		public Builder transactionAnnotation(String value) {
+			transactionAnnotation = LayoutSupport.requiredAnnotationTypeName(value);
+			return this;
+		}
+
+		public Builder transactionPackages(String... values) {
+			transactionPackagesConfigured = true;
+			LayoutSupport.replacePatterns(transactionPackages, values);
+			return this;
+		}
+
+		public Builder addTransactionPackages(String... values) {
+			transactionPackagesConfigured = true;
+			LayoutSupport.addPatterns(transactionPackages, values);
+			return this;
+		}
+
 		public DomainOrientedLayout build() {
 			if (!domainConfigured) {
 				LayoutSupport.prependPatterns(
@@ -336,6 +375,10 @@ public final class DomainOrientedLayout {
 		String basePackage() {
 			return baseline.basePackage();
 		}
+
+		private boolean transactionPackagesConfigured() {
+			return transactionPackagesConfigured;
+		}
 	}
 
 	private static BaselineLayout.Builder copyBaseline(BaselineLayout source) {
@@ -351,5 +394,19 @@ public final class DomainOrientedLayout {
 					LayoutSupport.resolveBasePackage(pair.target(), basePackage)));
 		}
 		return List.copyOf(resolved);
+	}
+
+	private boolean transactionPackagesConfigured() {
+		return !transactionPackages.isEmpty();
+	}
+
+	private static void validateTransactionConfiguration(Builder builder) {
+		boolean annotationConfigured = builder.transactionAnnotation != null;
+		boolean packagesConfigured = builder.transactionPackagesConfigured();
+		if (annotationConfigured != packagesConfigured
+				|| packagesConfigured && builder.transactionPackages.isEmpty()) {
+			throw new IllegalArgumentException(
+					"transactionAnnotation and transactionPackages must be configured together");
+		}
 	}
 }

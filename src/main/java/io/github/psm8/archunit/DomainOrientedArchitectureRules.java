@@ -44,7 +44,8 @@ public final class DomainOrientedArchitectureRules {
 								effectiveApplicationPackages,
 								effectiveApiPackages,
 								effectiveInfrastructurePackages),
-						domainModelFrameworkRules(layout)))
+						domainModelFrameworkRules(layout),
+						transactionPlacementRules(layout)))
 				.as("the domain-oriented architecture under " + layout.basePackage())
 				.because("domain and application boundaries protect business behavior");
 	}
@@ -139,6 +140,19 @@ public final class DomainOrientedArchitectureRules {
 						layout.domainModelFrameworkPackages(),
 						layout.dependencyDirectionIgnores()))
 				.as("domain classes use only model framework annotations")
+				.allowEmptyShould(true);
+	}
+
+	private static ArchRule transactionPlacementRules(DomainOrientedLayout layout) {
+		if (layout.transactionAnnotation() == null) {
+			return ArchitectureRuleSupport.emptyRule();
+		}
+		return classes().that()
+				.resideInAnyPackage(layout.basePackage() + "..")
+				.should(ArchitectureRuleSupport.haveConfiguredAnnotationOnlyInPackages(
+						layout.transactionAnnotation(),
+						layout.transactionPackages()))
+				.as("transaction annotations are limited to configured packages")
 				.allowEmptyShould(true);
 	}
 }

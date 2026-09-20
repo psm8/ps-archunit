@@ -418,6 +418,148 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void custom_profile_rejects_framework_annotations_on_port_parameters() {
+		assertRuleFails(
+				hexagonal(HexagonalLayout.of(
+						"io.github.psm8.archunit.fixtures.invalid.parameterannotation")),
+				"io.github.psm8.archunit.fixtures.invalid.parameterannotation");
+	}
+
+	@Test
+	void whole_port_signature_exceptions_skip_parameter_annotation_checks() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.parameterannotation.exception";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.portSignatureExceptions(
+						basePackage
+								+ ".application.port.in.AdapterAnnotatedUseCase")
+				.ignoreDependency(
+						basePackage + ".application.port.in.AdapterAnnotatedUseCase",
+						basePackage + ".adapter.in.AdapterParameter")
+				.build();
+
+		assertEquals(
+				List.of(basePackage + ".application.port.in.AdapterAnnotatedUseCase"),
+				layout.portSignatureExceptions());
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
+	}
+
+	@Test
+	void domain_oriented_accepts_configured_transaction_annotations_in_application() {
+		String basePackage = "io.github.psm8.archunit.fixtures.transaction.valid";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(
+						"org.springframework.transaction.annotation.Transactional")
+				.transactionPackages(basePackage + ".application..")
+				.build();
+
+		assertDoesNotThrow(() -> domainOriented(layout).check(imported(basePackage)));
+	}
+
+	@Test
+	void domain_oriented_rejects_transaction_annotations_outside_configured_packages() {
+		String basePackage = "io.github.psm8.archunit.fixtures.transaction.invalidplacement";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(
+						"org.springframework.transaction.annotation.Transactional")
+				.transactionPackages(basePackage + ".application..")
+				.build();
+
+		assertRuleFails(
+				domainOriented(layout),
+				io.github.psm8.archunit.fixtures.transaction.invalidplacement.infrastructure
+						.TransactionalAdapter.class);
+	}
+
+	@Test
+	void domain_oriented_rejects_method_transaction_annotations_outside_configured_packages() {
+		String basePackage = "io.github.psm8.archunit.fixtures.transaction.invalidplacement";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(
+						"org.springframework.transaction.annotation.Transactional")
+				.transactionPackages(basePackage + ".application..")
+				.build();
+
+		assertRuleFails(
+				domainOriented(layout),
+				io.github.psm8.archunit.fixtures.transaction.invalidplacement.infrastructure
+						.MethodTransactionalAdapter.class);
+	}
+
+	@Test
+	void transaction_configuration_requires_both_annotation_and_packages() {
+		String annotation = "org.springframework.transaction.annotation.Transactional";
+		String basePackage = "com.acme.orders";
+
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> DomainOrientedLayout.builder(basePackage)
+						.transactionAnnotation(annotation)
+						.build());
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> DomainOrientedLayout.builder(basePackage)
+						.transactionPackages(basePackage + ".application..")
+						.build());
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> DomainOrientedLayout.builder(basePackage)
+						.transactionAnnotation("Transactional"));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> DomainOrientedLayout.builder(basePackage)
+						.transactionAnnotation(
+								"org.springframework.transaction.annotation.*"));
+	}
+
+	@Test
+	void transaction_configuration_is_inherited_by_hexagonal_layouts() {
+		String basePackage = "io.github.psm8.archunit.fixtures.transaction.valid";
+		String annotation = "org.springframework.transaction.annotation.Transactional";
+		DomainOrientedLayout domain = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(annotation)
+				.transactionPackages("{base}.application..")
+				.build();
+		HexagonalLayout layout = HexagonalLayout.builder(domain).build();
+
+		assertEquals(annotation, layout.transactionAnnotation());
+		assertEquals(
+				List.of(basePackage + ".application.."),
+				layout.transactionPackages());
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
+	}
+
+	@Test
+	void transaction_configuration_survives_domain_layout_promotion() {
+		String basePackage = "com.acme.orders";
+		String annotation = "org.springframework.transaction.annotation.Transactional";
+		DomainOrientedLayout original = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(annotation)
+				.transactionPackages("{base}.application..")
+				.build();
+
+		DomainOrientedLayout copy = original.toBuilder().build();
+
+		assertEquals(annotation, copy.transactionAnnotation());
+		assertEquals(
+				List.of(basePackage + ".application.."),
+				copy.transactionPackages());
+	}
+
+	@Test
+	void hexagonal_framework_isolation_allows_only_configured_transaction_annotation() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.transaction.invalidframework";
+		DomainOrientedLayout domain = DomainOrientedLayout.builder(basePackage)
+				.transactionAnnotation(
+						"org.springframework.transaction.annotation.Transactional")
+				.transactionPackages(basePackage + ".application..")
+				.build();
+
+		assertRuleFails(hexagonal(HexagonalLayout.builder(domain).build()), basePackage);
+	}
+
+	@Test
 	void custom_profile_rejects_non_interface_port_class() {
 		assertRuleFails(
 				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.portclass")),
@@ -899,6 +1041,14 @@ class ArchitectureRuleTiersTest {
 			com.tngtech.archunit.lang.ArchRule rule,
 			String packageName) {
 		assertThrows(AssertionError.class, () -> rule.check(imported(packageName)));
+	}
+
+	private static void assertRuleFails(
+			com.tngtech.archunit.lang.ArchRule rule,
+			Class<?>... classes) {
+		assertThrows(
+				AssertionError.class,
+				() -> rule.check(new ClassFileImporter().importClasses(classes)));
 	}
 
 	private static void assertBeanExposureRuleFails(
