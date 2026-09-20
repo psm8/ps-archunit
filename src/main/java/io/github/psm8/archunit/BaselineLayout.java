@@ -16,7 +16,7 @@ public final class BaselineLayout {
 	private final List<PatternPair> cycleDependencyIgnores;
 	private final List<String> publicConfigurationClasses;
 	private final List<String> publicConfigurationProperties;
-	private final List<String> interfaceBeanReturnTypes;
+	private final List<String> allowedApplicationInterfaceBeanTypes;
 	private final String outputSuffix;
 
 	private BaselineLayout(Builder builder) {
@@ -27,7 +27,8 @@ public final class BaselineLayout {
 		cycleDependencyIgnores = List.copyOf(builder.cycleDependencyIgnores);
 		publicConfigurationClasses = List.copyOf(builder.publicConfigurationClasses);
 		publicConfigurationProperties = List.copyOf(builder.publicConfigurationProperties);
-		interfaceBeanReturnTypes = List.copyOf(builder.interfaceBeanReturnTypes);
+		allowedApplicationInterfaceBeanTypes =
+				List.copyOf(builder.allowedApplicationInterfaceBeanTypes);
 		outputSuffix = builder.outputSuffix;
 	}
 
@@ -52,7 +53,8 @@ public final class BaselineLayout {
 				.publicConfigurationClasses(publicConfigurationClasses.toArray(String[]::new))
 				.publicConfigurationProperties(
 						publicConfigurationProperties.toArray(String[]::new))
-				.interfaceBeanReturnTypes(interfaceBeanReturnTypes.toArray(String[]::new))
+				.allowedApplicationInterfaceBeanTypes(
+						allowedApplicationInterfaceBeanTypes.toArray(String[]::new))
 				.outputSuffix(outputSuffix);
 	}
 
@@ -84,8 +86,8 @@ public final class BaselineLayout {
 		return publicConfigurationProperties;
 	}
 
-	public List<String> interfaceBeanReturnTypes() {
-		return interfaceBeanReturnTypes;
+	public List<String> allowedApplicationInterfaceBeanTypes() {
+		return allowedApplicationInterfaceBeanTypes;
 	}
 
 	public String outputSuffix() {
@@ -138,7 +140,7 @@ public final class BaselineLayout {
 		private final List<PatternPair> cycleDependencyIgnores = new ArrayList<>();
 		private final List<String> publicConfigurationClasses = new ArrayList<>();
 		private final List<String> publicConfigurationProperties = new ArrayList<>();
-		private final List<String> interfaceBeanReturnTypes = new ArrayList<>();
+		private final List<String> allowedApplicationInterfaceBeanTypes = new ArrayList<>();
 		private String outputSuffix;
 		private boolean outputsConfigured;
 
@@ -200,8 +202,8 @@ public final class BaselineLayout {
 			return this;
 		}
 
-		public Builder interfaceBeanReturnTypes(String... values) {
-			LayoutSupport.replacePatterns(interfaceBeanReturnTypes, values);
+		public Builder allowedApplicationInterfaceBeanTypes(String... values) {
+			LayoutSupport.replaceTypeNames(allowedApplicationInterfaceBeanTypes, values);
 			return this;
 		}
 

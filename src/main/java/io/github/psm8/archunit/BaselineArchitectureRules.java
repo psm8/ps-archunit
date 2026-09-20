@@ -109,9 +109,10 @@ public final class BaselineArchitectureRules {
 						.allowEmptyShould(true))
 				.and(methods()
 						.that().areAnnotatedWith(ArchitectureRuleSupport.BEAN)
-						.should(ArchitectureRuleSupport.haveConcreteBeanReturnTypes(
-								layout.interfaceBeanReturnTypes()))
-						.as("@Bean methods expose a concrete type unless a contract is documented")
+						.should(ArchitectureRuleSupport.haveValidBeanExposure(
+								layout.basePackage(),
+								layout.allowedApplicationInterfaceBeanTypes()))
+						.as("@Bean methods expose concrete types or explicitly allowed contracts")
 						.allowEmptyShould(true));
 	}
 

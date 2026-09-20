@@ -139,6 +139,15 @@ are not classified.
 The Level 1 rule tier. It protects package cycles, explicit dependency bans,
 configuration, bean declarations, and immutable boundary outputs.
 
+**Bean exposure policy**:
+Baseline evaluates the declared return type of each `@Bean` method. Concrete
+application-owned return types and interfaces outside the application's base
+package are allowed. Application-owned interface returns fail by default and
+require an exact fully qualified name in
+`allowedApplicationInterfaceBeanTypes(...)` to be allowed. The selector
+rejects null, blank, simple, wildcard, and package-pattern values. It does not
+inspect method bodies or infer port/use-case semantics.
+
 **Domain-oriented**:
 The cumulative Level 2 rule tier. It adds domain, application, API, and
 infrastructure dependency direction and allows only configured model annotations

@@ -41,9 +41,31 @@ final class LayoutSupport {
 		return value;
 	}
 
+	static String requiredTypeName(String value) {
+		if (value == null
+				|| value.isBlank()
+				|| !value.equals(value.trim())
+				|| !SourceVersion.isName(value)
+				|| value.indexOf('.') <= 0) {
+			throw new IllegalArgumentException(
+					"application interface bean type must be an exact Java type name: " + value);
+		}
+		return value;
+	}
+
 	static void replacePatterns(List<String> target, String... values) {
 		target.clear();
 		addPatterns(target, values);
+	}
+
+	static void replaceTypeNames(List<String> target, String... values) {
+		target.clear();
+		if (values == null) {
+			return;
+		}
+		for (String value : values) {
+			target.add(requiredTypeName(value));
+		}
 	}
 
 	static void addPatterns(List<String> target, String... values) {

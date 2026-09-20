@@ -72,6 +72,12 @@ not on infrastructure types. This permits translation adapters to normalize
 external representations without coupling delivery code to technical
 mechanisms.
 
+Bean exposure uses each `@Bean` method's declared return type. Concrete
+application-owned types and external interfaces pass. Application-owned
+interfaces fail unless their exact fully qualified name is configured with
+`allowedApplicationInterfaceBeanTypes(...)`. Selector values reject null,
+blank, simple, wildcard, and package-pattern forms.
+
 ## Configured layouts
 
 Each tier has its own immutable cumulative snapshot and mutable builder:
@@ -187,7 +193,7 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - explicit dependency bans;
 - package-private internal configuration and configuration-properties classes;
 - lite Spring configuration (`proxyBeanMethods = false`);
-- `@Bean` placement and concrete return types;
+- `@Bean` placement and declared return-type exposure policy;
 - record or sealed-interface boundary outputs.
 
 ### Level 2: `domainOriented`

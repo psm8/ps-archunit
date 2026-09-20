@@ -100,8 +100,8 @@ public final class DomainOrientedLayout {
 		return baseline.publicConfigurationProperties();
 	}
 
-	public List<String> interfaceBeanReturnTypes() {
-		return baseline.interfaceBeanReturnTypes();
+	public List<String> allowedApplicationInterfaceBeanTypes() {
+		return baseline.allowedApplicationInterfaceBeanTypes();
 	}
 
 	public String outputSuffix() {
@@ -202,8 +202,8 @@ public final class DomainOrientedLayout {
 			return this;
 		}
 
-		public Builder interfaceBeanReturnTypes(String... values) {
-			baseline.interfaceBeanReturnTypes(values);
+		public Builder allowedApplicationInterfaceBeanTypes(String... values) {
+			baseline.allowedApplicationInterfaceBeanTypes(values);
 			return this;
 		}
 

@@ -147,8 +147,8 @@ public final class HexagonalLayout {
 		return domainOriented.publicConfigurationProperties();
 	}
 
-	public List<String> interfaceBeanReturnTypes() {
-		return domainOriented.interfaceBeanReturnTypes();
+	public List<String> allowedApplicationInterfaceBeanTypes() {
+		return domainOriented.allowedApplicationInterfaceBeanTypes();
 	}
 
 	public String outputSuffix() {
@@ -291,8 +291,8 @@ public final class HexagonalLayout {
 			return this;
 		}
 
-		public Builder interfaceBeanReturnTypes(String... values) {
-			domainOriented.interfaceBeanReturnTypes(values);
+		public Builder allowedApplicationInterfaceBeanTypes(String... values) {
+			domainOriented.allowedApplicationInterfaceBeanTypes(values);
 			return this;
 		}
 

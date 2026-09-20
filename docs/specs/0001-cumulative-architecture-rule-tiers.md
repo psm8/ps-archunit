@@ -202,9 +202,16 @@ content describe the same model.
   matches are valid, and imported classes outside `basePackage..` are not
   classified.
 - Existing output suffix, dependency-ban, cycle-ignore, port-signature,
-  adapter exception, bean return-type, and configuration visibility
+  adapter exception, bean exposure, and configuration visibility
   customization remains supported unless removed explicitly above.
-- Record the current cumulative-tier decision in ADR 0001.
+- Baseline bean exposure is based on the declared `@Bean` return type:
+  concrete application-owned types and interfaces outside the application
+  base package pass; application-owned interface types fail by default.
+  `allowedApplicationInterfaceBeanTypes(...)` allows exact fully qualified
+  application-owned interface names only. Null, blank, simple, wildcard, and
+  package-pattern values are invalid. The rule does not inspect method bodies
+  or infer ports and use cases.
+- Record the bean exposure decision in ADR 0002.
 - Update current architecture Markdown, glossary, README, and ADR content to
   use the same tier and package vocabulary.
 
@@ -231,7 +238,10 @@ content describe the same model.
   behavior.
 - Preserve regression coverage for strict and lax aliases, onion direction,
   cycles, ports, adapter wiring and containment, component annotations,
-  outputs, beans, configuration behavior, and dependency bans.
+  outputs, beans, configuration behavior, and dependency bans. Bean tests must
+  cover concrete application returns, external interfaces, rejected local
+  interfaces, exact allowlisting, invalid selector values, and package-prefix
+  ownership boundaries.
 - Validate external behavior only: rule pass/fail results, layout snapshots,
   factory validation, and public compatibility behavior.
 - Run the project test suite, full Maven verification, whitespace/diff checks,

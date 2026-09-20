@@ -202,19 +202,30 @@ final class ArchitectureRuleSupport {
 		};
 	}
 
-	static ArchCondition<JavaMethod> haveConcreteBeanReturnTypes(
-			List<String> allowedInterfaceTypes) {
-		return new ArchCondition<>("return a concrete type or documented contract") {
+	static ArchCondition<JavaMethod> haveValidBeanExposure(
+			String basePackage,
+			List<String> allowedApplicationInterfaceTypes) {
+		return new ArchCondition<>(
+				"return a concrete type, an external interface, or an allowed application interface") {
 			@Override
 			public void check(JavaMethod method, ConditionEvents events) {
-				if (method.getRawReturnType().isInterface()
-						&& !matchesAny(method.getRawReturnType().getName(), allowedInterfaceTypes)) {
+				JavaClass returnType = method.getRawReturnType();
+				boolean applicationInterface = returnType.isInterface()
+						&& isInBasePackage(returnType.getPackageName(), basePackage);
+				if (applicationInterface
+						&& !allowedApplicationInterfaceTypes.contains(returnType.getName())) {
 					events.add(SimpleConditionEvent.violated(method,
 							method.getFullName() + " returns interface "
-									+ method.getRawReturnType().getName()));
+									+ returnType.getName()
+									+ " owned by the application"));
 				}
 			}
 		};
+	}
+
+	static boolean isInBasePackage(String packageName, String basePackage) {
+		return packageName.equals(basePackage)
+				|| packageName.startsWith(basePackage + ".");
 	}
 
 	static ArchCondition<JavaClass> haveImmutableBoundaryShape() {

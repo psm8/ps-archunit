@@ -25,6 +25,68 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void baseline_accepts_concrete_and_external_interface_bean_returns() {
+		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.valid";
+		String basePackage = rootPackage + ".application";
+
+		assertDoesNotThrow(() -> baseline(basePackage).check(imported(rootPackage)));
+	}
+
+	@Test
+	void baseline_rejects_unlisted_application_interface_bean_returns() {
+		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.invalid.local";
+		String basePackage = rootPackage + ".application";
+
+		assertRuleFails(baseline(basePackage), rootPackage);
+	}
+
+	@Test
+	void baseline_allows_exactly_allowlisted_application_interface_bean_returns() {
+		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.allowlist.allowed";
+		String basePackage = rootPackage + ".application";
+		BaselineLayout layout = BaselineLayout.builder(basePackage)
+				.allowedApplicationInterfaceBeanTypes(basePackage + ".AllowedBeanContract")
+				.build();
+
+		assertDoesNotThrow(() -> baseline(layout).check(imported(rootPackage)));
+	}
+
+	@Test
+	void baseline_rejects_a_different_application_interface_bean_return() {
+		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.allowlist.unlisted";
+		String basePackage = rootPackage + ".application";
+		BaselineLayout layout = BaselineLayout.builder(basePackage)
+				.allowedApplicationInterfaceBeanTypes(basePackage + ".SomeOtherContract")
+				.build();
+
+		assertRuleFails(baseline(layout), rootPackage);
+	}
+
+	@Test
+	void bean_interface_allowlist_requires_exact_type_names() {
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BaselineLayout.builder("com.acme.orders")
+						.allowedApplicationInterfaceBeanTypes(""));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BaselineLayout.builder("com.acme.orders")
+						.allowedApplicationInterfaceBeanTypes("com.acme.orders.."));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BaselineLayout.builder("com.acme.orders")
+						.allowedApplicationInterfaceBeanTypes("com.acme.orders.*"));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BaselineLayout.builder("com.acme.orders")
+						.allowedApplicationInterfaceBeanTypes("OrderRepositoryPort"));
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BaselineLayout.builder("com.acme.orders")
+						.allowedApplicationInterfaceBeanTypes(new String[] {null}));
+	}
+
+	@Test
 	void domain_oriented_accepts_valid_application_layout() {
 		String basePackage = "io.github.psm8.archunit.fixtures.valid";
 		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
