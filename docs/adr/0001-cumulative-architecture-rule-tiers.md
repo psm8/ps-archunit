@@ -57,6 +57,14 @@ keeps dependency direction distinct from the optional project policy that
 requires every delivery adapter to enter through an application use case, and
 supports translation adapters that normalize external representations into
 domain types.
+
+Levels 2 and 3 also enforce classification completeness within the consumer's
+scope: every imported class under `basePackage..` must match at least one
+configured domain, application/core, API, or infrastructure group. Level 1
+remains permissive. Empty groups remain no-ops, overlapping matches are
+allowed, classes outside the base package are ignored, and Level 3 classifies
+inbound and outbound ports as application/core while folding adapters into
+effective API or infrastructure groups.
 ## Consequences
 
 Consumers can select the lowest tier that protects the system's likely

@@ -63,7 +63,8 @@ wildcards or a trailing dot.
 
 Level 2 declares API and infrastructure groups independently. Level 3
 effectively treats inbound adapters as API code and outbound or mixed adapters
-as infrastructure. Configuration is also infrastructure, but configuration
+as infrastructure, and treats inbound and outbound ports as application/core.
+Configuration is also infrastructure, but configuration
 rules find `@Configuration`, `@ConfigurationProperties`, and `@Bean`
 declarations by annotation rather than by a configuration package selector.
 API and inbound adapter code may depend on application and domain types, but
@@ -135,9 +136,16 @@ The same pattern applies to `infrastructurePackages(...)`,
 that snapshot; `toBuilder()` starts an independent builder.
 
 Level 3 lower-layer checks use effective groups internally: declared API plus
-inbound adapters, and declared infrastructure plus outbound and mixed adapters.
+inbound adapters; declared infrastructure plus outbound and mixed adapters;
+and declared application plus inbound and outbound ports as application/core.
 The hexagonal layout exposes the inherited API boundary through rule behavior,
 not through a repeated public API selector.
+
+For Level 2 and Level 3, every imported class in `basePackage..` must belong
+to at least one configured domain, application/core, API, or infrastructure
+group. An empty group remains a no-op when no in-scope class uses it. Level 1
+does not apply this completeness check. Group overlap is allowed, and imported
+classes outside `basePackage..` are ignored by classification.
 
 Model-framework allowances apply only to annotation types used as metadata on
 domain classes. A runtime service, client, or other non-annotation type from
@@ -190,6 +198,8 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - infrastructure does not depend on API;
 - infrastructure may depend on domain and application;
 - domain may use configured model annotations, but not runtime framework types.
+- every class under the base package belongs to at least one configured
+  architecture group.
 
 ### Level 3: `hexagonal`
 
@@ -202,6 +212,9 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - outbound adapter wiring, visibility, and containment;
 - the composition-root exception is not transitive. It applies to the explicit
   configuration class, not to arbitrary domain or application classes it calls.
+- inbound and outbound ports are classified as application/core;
+- every class under the base package belongs to at least one effective
+  architecture group, including declared groups and adapter groups.
 
 Component annotations are not package-layout selectors and do not trigger a
 separate selector rule.

@@ -1,4 +1,4 @@
-package io.github.psm8.archunit.fixtures.model.framework;
+package io.github.psm8.archunit.fixtures.support.model.framework;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

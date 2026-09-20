@@ -99,6 +99,10 @@ public final class HexagonalLayout {
 		return domainOriented.applicationPackages();
 	}
 
+	List<String> applicationCorePackages() {
+		return combine(applicationPackages(), inboundPortPackages, outboundPortPackages);
+	}
+
 	List<String> apiPackages() {
 		return domainOriented.apiPackages();
 	}

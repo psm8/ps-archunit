@@ -1,4 +1,4 @@
-package io.github.psm8.archunit.fixtures.valid.sealed.application.port.in;
+package io.github.psm8.archunit.fixtures.sealed.application.port.in;
 
 public sealed interface AuthenticationResult
 		permits AuthenticationResult.Authenticated, AuthenticationResult.Rejected {

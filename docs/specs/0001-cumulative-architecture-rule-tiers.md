@@ -51,8 +51,10 @@ content describe the same model.
    common layouts need minimal configuration.
 6. As a library consumer, I want a typed layout factory for each tier, so that
    feature-first and non-default package layouts remain configurable.
-7. As a library consumer, I want missing package groups to produce no-op rules,
-   so that partial applications and incremental migrations can be checked.
+7. As a library consumer, I want empty package groups to produce no-op rules
+   while unmatched classes under the configured base package fail at Levels 2
+   and 3, so that partial applications remain checkable without silently
+   ignoring architecture code.
 8. As a library consumer, I want domain dependencies on application,
    API, and infrastructure rejected at Level 2, so that business meaning
    remains independent from outer concerns.
@@ -179,7 +181,8 @@ content describe the same model.
 - Standalone Level 2 API defaults include only the base `api` group, and
   infrastructure defaults include only the base `infrastructure` group.
   Level 3 lower-tier checks add inbound adapters to the effective API group
-  and outbound/mixed adapters to the effective infrastructure group.
+  and outbound/mixed adapters to the effective infrastructure group. Level 3
+  treats declared inbound and outbound port groups as application/core.
 - Keep directional and mixed adapter selectors needed by Level 3 wiring and
   containment rules.
 - Remove configuration and configuration-properties package selectors,
@@ -193,6 +196,11 @@ content describe the same model.
   composition-root exceptions only for their assembly dependencies. The
   exception is not transitive to other domain or application classes.
 - Package groups remain optional. Rules targeting empty groups are no-ops.
+  Levels 2 and 3 additionally require every imported class under
+  `basePackage..` to match at least one configured domain, application/core,
+  API, or infrastructure group. Level 1 remains permissive. Overlapping group
+  matches are valid, and imported classes outside `basePackage..` are not
+  classified.
 - Existing output suffix, dependency-ban, cycle-ignore, port-signature,
   adapter exception, bean return-type, and configuration visibility
   customization remains supported unless removed explicitly above.
@@ -218,7 +226,9 @@ content describe the same model.
 - Verify typed cumulative layouts, custom API, infrastructure, and
   model-framework package selectors, replacement behavior, append behavior,
   promotion isolation, HexagonalLayout API-surface hiding, effective Level 3
-  groups, and missing-group no-op behavior.
+  groups, application/core port derivation, classification completeness,
+  external imported classes, overlapping groups, and empty-group no-op
+  behavior.
 - Preserve regression coverage for strict and lax aliases, onion direction,
   cycles, ports, adapter wiring and containment, component annotations,
   outputs, beans, configuration behavior, and dependency bans.

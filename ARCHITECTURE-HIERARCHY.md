@@ -26,6 +26,25 @@ Choose the lowest level that protects the system's likely changes:
 Architecture investment is justified by concrete pressure, not by fashion,
 team size, codebase size, traffic, or a desire to future-proof the system.
 
+## Rule scope and classification
+
+The tiers differ in how much package structure they enforce:
+
+- Level 1 remains permissive about architecture categories. It does not reject
+  an otherwise valid in-scope class merely because no domain, application, API,
+  or infrastructure selector matches it.
+- Levels 2 and 3 fail closed. Every imported class under `basePackage..` must
+  match at least one configured architecture group. Level 3 classifies inbound
+  and outbound ports as application/core, inbound adapters as effective API,
+  and outbound or mixed adapters as effective infrastructure.
+- Empty groups remain optional and rules targeting an empty group remain
+  no-ops. A class may match multiple groups. Imported classes outside the base
+  package are not part of classification.
+
+This completeness check validates the consumer's imported scope. It does not
+invent an infrastructure fallback for classes that the configured vocabulary
+does not describe.
+
 ## 1. Infrastructure-centric architecture
 
 The system is primarily shaped by technical mechanisms such as frameworks,

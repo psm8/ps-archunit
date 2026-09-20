@@ -1,6 +1,6 @@
 package io.github.psm8.archunit.fixtures.model.domain;
 
-import io.github.psm8.archunit.fixtures.model.framework.RuntimeFrameworkType;
+import io.github.psm8.archunit.fixtures.support.model.framework.RuntimeFrameworkType;
 
 public final class RuntimeFrameworkModel {
 	private final RuntimeFrameworkType frameworkType;

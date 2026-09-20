@@ -26,7 +26,18 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void domain_oriented_accepts_valid_application_layout() {
-		domainOriented("io.github.psm8.archunit.fixtures.valid")
+		String basePackage = "io.github.psm8.archunit.fixtures.valid";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.applicationPackages(
+						basePackage + ".application..",
+						basePackage + ".sealed.application..")
+				.apiPackages(
+						basePackage + ".api..",
+						basePackage + ".adapter.in..")
+				.infrastructurePackages(basePackage + ".adapter.out..")
+				.build();
+
+		domainOriented(layout)
 				.check(imported("io.github.psm8.archunit.fixtures.valid"));
 	}
 
@@ -35,6 +46,14 @@ class ArchitectureRuleTiersTest {
 		assertDoesNotThrow(() -> baseline(
 				"io.github.psm8.archunit.fixtures.invalid.onion")
 				.check(imported("io.github.psm8.archunit.fixtures.invalid.onion")));
+	}
+
+	@Test
+	void baseline_allows_unclassified_classes() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
+
+		assertDoesNotThrow(() -> baseline(basePackage).check(imported(basePackage)));
 	}
 
 	@Test
@@ -80,15 +99,30 @@ class ArchitectureRuleTiersTest {
 	void domain_oriented_allows_api_dependencies_on_domain() {
 		String basePackage = "io.github.psm8.archunit.fixtures.valid";
 
-		assertDoesNotThrow(() -> domainOriented(basePackage)
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.applicationPackages(
+						basePackage + ".application..",
+						basePackage + ".sealed.application..")
+				.apiPackages(
+						basePackage + ".api..",
+						basePackage + ".adapter.in..")
+				.infrastructurePackages(basePackage + ".adapter.out..")
+				.build();
+
+		assertDoesNotThrow(() -> domainOriented(layout)
 				.check(imported(basePackage)));
 	}
 
 	@Test
 	void hexagonal_allows_inbound_adapter_dependencies_on_domain() {
 		String basePackage = "io.github.psm8.archunit.fixtures.valid";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.applicationPackages(
+						basePackage + ".application..",
+						basePackage + ".sealed.application..")
+				.build();
 
-		assertDoesNotThrow(() -> hexagonal(basePackage)
+		assertDoesNotThrow(() -> hexagonal(layout)
 				.check(imported(basePackage)));
 	}
 
@@ -107,6 +141,22 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void hexagonal_rejects_unclassified_classes() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
+
+		assertRuleFails(hexagonal(basePackage), basePackage);
+	}
+
+	@Test
+	void lax_hexagonal_rejects_unclassified_classes() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
+
+		assertRuleFails(laxHexagonal(basePackage), basePackage);
+	}
+
+	@Test
 	void domain_oriented_rejects_infrastructure_dependencies_on_api() {
 		String basePackage =
 				"io.github.psm8.archunit.fixtures.invalid.direction.infrastructure";
@@ -115,44 +165,94 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void domain_oriented_allows_configured_model_annotations() {
-		String basePackage = "io.github.psm8.archunit.fixtures.model";
+	void domain_oriented_rejects_unclassified_classes() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
+
+		assertRuleFails(domainOriented(basePackage), basePackage);
+	}
+
+	@Test
+	void overlapping_category_matches_are_accepted() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
 		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
-				.domainModelFrameworkPackages(basePackage + ".framework..")
+				.applicationPackages(basePackage + ".domain..")
+				.build();
+
+		domainOriented(layout).check(new ClassFileImporter().importClasses(
+				io.github.psm8.archunit.fixtures.invalid.classification.domain
+						.ClassifiedComponent.class));
+	}
+
+	@Test
+	void imported_classes_outside_base_package_are_not_classified() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.classification";
+
+		domainOriented(basePackage).check(new ClassFileImporter().importClasses(
+				io.github.psm8.archunit.fixtures.invalid.classification.domain
+						.ClassifiedComponent.class,
+				io.github.psm8.archunit.fixtures.support.ExternalSupport.class));
+	}
+
+	@Test
+	void empty_level_two_groups_remain_optional() {
+		String basePackage = "io.github.psm8.archunit.fixtures.partial";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.apiPackages()
+				.infrastructurePackages()
+				.build();
+
+		domainOriented(layout).check(imported(basePackage));
+	}
+
+	@Test
+	void domain_oriented_allows_configured_model_annotations() {
+		String basePackage = "io.github.psm8.archunit.fixtures.model";
+		String supportPackage =
+				"io.github.psm8.archunit.fixtures.support.model.framework";
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
+				.domain(basePackage + ".domain..")
+				.domainModelFrameworkPackages(supportPackage + "..")
 				.build();
 
 		domainOriented(layout).check(new ClassFileImporter().importClasses(
 				io.github.psm8.archunit.fixtures.model.domain.AnnotatedModel.class,
-				io.github.psm8.archunit.fixtures.model.framework.ModelAnnotation.class));
+				io.github.psm8.archunit.fixtures.support.model.framework.ModelAnnotation.class));
 	}
 
 	@Test
 	void hexagonal_preserves_configured_model_annotation_allowance() {
 		String basePackage = "io.github.psm8.archunit.fixtures.model";
+		String supportPackage =
+				"io.github.psm8.archunit.fixtures.support.model.framework";
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
-				.domainModelFrameworkPackages(basePackage + ".framework..")
+				.domainModelFrameworkPackages(supportPackage + "..")
 				.build();
 
 		hexagonal(layout).check(new ClassFileImporter().importClasses(
 				io.github.psm8.archunit.fixtures.model.domain.AnnotatedModel.class,
-				io.github.psm8.archunit.fixtures.model.framework.ModelAnnotation.class));
+				io.github.psm8.archunit.fixtures.support.model.framework.ModelAnnotation.class));
 	}
 
 	@Test
 	void domain_oriented_rejects_runtime_types_from_configured_model_namespace() {
 		String basePackage = "io.github.psm8.archunit.fixtures.model";
+		String supportPackage =
+				"io.github.psm8.archunit.fixtures.support.model.framework";
 		DomainOrientedLayout layout = DomainOrientedLayout.builder(basePackage)
 				.domain(basePackage + ".domain..")
-				.domainModelFrameworkPackages(basePackage + ".framework..")
+				.domainModelFrameworkPackages(supportPackage + "..")
 				.build();
 
 		assertThrows(
 				AssertionError.class,
 				() -> domainOriented(layout).check(new ClassFileImporter().importClasses(
 						io.github.psm8.archunit.fixtures.model.domain.RuntimeFrameworkModel.class,
-						io.github.psm8.archunit.fixtures.model.framework.RuntimeFrameworkType.class)));
+						io.github.psm8.archunit.fixtures.support.model.framework.RuntimeFrameworkType.class)));
 	}
 
 	@Test
@@ -200,8 +300,19 @@ class ArchitectureRuleTiersTest {
 
 	@Test
 	void custom_profile_accepts_sealed_boundary_types_in_port_packages() {
-		hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.valid.sealed"))
-				.check(imported("io.github.psm8.archunit.fixtures.valid.sealed"));
+		hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.sealed"))
+				.check(imported("io.github.psm8.archunit.fixtures.sealed"));
+	}
+
+	@Test
+	void custom_port_packages_are_application_core_for_level_three() {
+		String basePackage = "io.github.psm8.archunit.fixtures.customports";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.inboundPortPackages(basePackage + ".contract.in..")
+				.outboundPortPackages(basePackage + ".contract.out..")
+				.build();
+
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
 	}
 
 	@Test
@@ -388,6 +499,12 @@ class ArchitectureRuleTiersTest {
 
 		assertEquals(List.of("com.acme.orders.api.."), layout.apiPackages());
 		assertEquals(
+				List.of(
+						"com.acme.orders.application..",
+						"com.acme.orders.application.port.in..",
+						"com.acme.orders.application.port.out.."),
+				layout.applicationCorePackages());
+		assertEquals(
 				List.of("com.acme.orders.api..", "com.acme.orders.adapter.in.."),
 				layout.effectiveApiPackages());
 		assertEquals(
@@ -535,7 +652,9 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void component_annotations_are_not_architecture_selectors() {
 		String basePackage = "io.github.psm8.archunit.fixtures.component";
-		HexagonalLayout layout = HexagonalLayout.builder(basePackage).build();
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.infrastructurePackages(basePackage + ".scanned..")
+				.build();
 
 		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
 	}
@@ -550,6 +669,9 @@ class ArchitectureRuleTiersTest {
 						basePackage + ".forbidden.ForbiddenType");
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.dependencyBans(ban)
+				.infrastructurePackages(
+						basePackage + ".source..",
+						basePackage + ".forbidden..")
 				.build();
 
 		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
@@ -559,7 +681,9 @@ class ArchitectureRuleTiersTest {
 	void mixed_adapters_are_a_third_onion_layer() {
 		String basePackage = "io.github.psm8.archunit.fixtures.mixed";
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
-				.mixedAdapterPackages(basePackage + ".adapter.mixed..")
+				.mixedAdapterPackages(
+						basePackage + ".adapter.mixed..",
+						basePackage + ".only.adapter..")
 				.build();
 
 		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));

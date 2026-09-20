@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 final class ArchitectureRuleSupport {
 	static final String CONFIGURATION =
@@ -61,6 +62,32 @@ final class ArchitectureRuleSupport {
 						events.add(SimpleConditionEvent.violated(source,
 								dependency.getDescription()));
 					}
+				}
+			}
+		};
+	}
+
+	static ArchRule classesBelongToConfiguredPackages(
+			String basePackage,
+			List<String> configuredPackages) {
+		return classes().that()
+				.resideInAnyPackage(basePackage + "..")
+				.should(belongToConfiguredPackages(configuredPackages))
+				.as("classes under " + basePackage
+						+ " belong to an architecture package group")
+				.allowEmptyShould(true);
+	}
+
+	private static ArchCondition<JavaClass> belongToConfiguredPackages(
+			List<String> configuredPackages) {
+		return new ArchCondition<>("belong to one of " + configuredPackages) {
+			@Override
+			public void check(JavaClass item, ConditionEvents events) {
+				boolean configured = configuredPackages.stream()
+						.anyMatch(pattern -> matches(item.getPackageName(), pattern));
+				if (!configured) {
+					events.add(SimpleConditionEvent.violated(item,
+							item.getName() + " does not belong to an architecture package group"));
 				}
 			}
 		};

@@ -128,6 +128,13 @@ driven port.
 **Architecture rule**:
 An executable constraint evaluated against imported Java classes.
 
+**Classification completeness**:
+The Level 2 and Level 3 requirement that every imported class under
+`basePackage..` belongs to at least one configured domain, application/core,
+API, or infrastructure group. Level 1 is permissive. Empty groups remain
+no-ops, overlapping groups are allowed, and classes outside the base package
+are not classified.
+
 **Baseline**:
 The Level 1 rule tier. It protects package cycles, explicit dependency bans,
 configuration, bean declarations, and immutable boundary outputs.
@@ -147,13 +154,21 @@ infrastructure types. By default it includes `basePackage.api..` in Level 2.
 Level 3 lower-tier checks use the declared API group plus inbound adapter
 groups as an internal effective group. API package customization belongs to
 the domain-oriented architecture level; hexagonal architecture inherits that
-boundary.
+boundary. Every class in the effective group is also a classification match
+for Level 2/3 completeness.
+
+**Application/core package group**:
+The conceptual inside of the system. Level 2 uses the configured application
+group. Level 3 extends it internally with configured inbound and outbound
+port groups. It is not a required package named `core`.
 
 **Infrastructure package group**:
 Outbound adapters, persistence, clients, messaging, configuration, and
 framework integration. By default it includes `basePackage.infrastructure..`
 in Level 2. Level 3 lower-tier checks use the declared infrastructure group
-plus outbound and mixed adapter groups as an internal effective group.
+plus outbound and mixed adapter groups as an internal effective group. Every
+class in the effective group is also a classification match for Level 2/3
+completeness.
 
 **Model-framework package group**:
 Configured namespaces whose annotation types may be used as domain model
@@ -191,6 +206,6 @@ groups, port exceptions, adapter exceptions, and naming suffixes.
 A higher-level layout retains lower-level configuration and adds only concepts
 owned by its level. Level 3 also treats inbound adapters as API boundaries and
 outbound or mixed adapters as infrastructure boundaries when applying lower
-level rules. API package customization, framework namespace policy, and
-dependency-direction exceptions belong to the domain-oriented layout and are
-inherited by Level 3.
+level rules, and treats ports as application/core. API package customization,
+framework namespace policy, and dependency-direction exceptions belong to the
+domain-oriented layout and are inherited by Level 3.

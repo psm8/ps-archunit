@@ -42,6 +42,7 @@ public final class HexagonalArchitectureRules {
 		return ArchitectureRuleSupport.combine(List.of(
 						DomainOrientedArchitectureRules.domainOriented(
 								layout.domainOriented(),
+								layout.applicationCorePackages(),
 								layout.effectiveApiPackages(),
 								layout.effectiveInfrastructurePackages()),
 						onionRule(layout),
@@ -59,8 +60,9 @@ public final class HexagonalArchitectureRules {
 		if (!layout.domain().isEmpty()) {
 			rule.domainModels(layout.domain().toArray(String[]::new));
 		}
-		if (!layout.applicationPackages().isEmpty()) {
-			rule.applicationServices(layout.applicationPackages().toArray(String[]::new));
+		if (!layout.applicationCorePackages().isEmpty()) {
+			rule.applicationServices(
+					layout.applicationCorePackages().toArray(String[]::new));
 		}
 		if (!layout.effectiveApiPackages().isEmpty()) {
 			rule.adapter("in", layout.effectiveApiPackages().toArray(String[]::new));
@@ -82,7 +84,7 @@ public final class HexagonalArchitectureRules {
 	private static ArchRule noFrameworkDependencies(HexagonalLayout layout) {
 		List<String> sources = new ArrayList<>();
 		sources.addAll(layout.domain());
-		sources.addAll(layout.applicationPackages());
+		sources.addAll(layout.applicationCorePackages());
 		if (sources.isEmpty() || layout.frameworkDependencyPackages().isEmpty()) {
 			return ArchitectureRuleSupport.emptyRule();
 		}

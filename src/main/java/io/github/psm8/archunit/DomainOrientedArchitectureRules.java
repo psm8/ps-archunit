@@ -22,30 +22,56 @@ public final class DomainOrientedArchitectureRules {
 		ArchitectureRuleSupport.requireLayout(layout);
 		return domainOriented(
 				layout,
+				layout.applicationPackages(),
 				layout.apiPackages(),
 				layout.infrastructurePackages());
 	}
 
 	static ArchRule domainOriented(
 			DomainOrientedLayout layout,
+			List<String> effectiveApplicationPackages,
 			List<String> effectiveApiPackages,
 			List<String> effectiveInfrastructurePackages) {
 		return ArchitectureRuleSupport.combine(List.of(
 						BaselineArchitectureRules.baseline(layout.baseline()),
+						classificationRules(
+								layout,
+								effectiveApplicationPackages,
+								effectiveApiPackages,
+								effectiveInfrastructurePackages),
 						domainDependencyRules(
-								layout, effectiveApiPackages, effectiveInfrastructurePackages),
+								layout,
+								effectiveApplicationPackages,
+								effectiveApiPackages,
+								effectiveInfrastructurePackages),
 						domainModelFrameworkRules(layout)))
 				.as("the domain-oriented architecture under " + layout.basePackage())
 				.because("domain and application boundaries protect business behavior");
 	}
 
+	private static ArchRule classificationRules(
+			DomainOrientedLayout layout,
+			List<String> applicationPackages,
+			List<String> apiPackages,
+			List<String> infrastructurePackages) {
+		List<String> configuredPackages = new ArrayList<>();
+		configuredPackages.addAll(layout.domain());
+		configuredPackages.addAll(applicationPackages);
+		configuredPackages.addAll(apiPackages);
+		configuredPackages.addAll(infrastructurePackages);
+		return ArchitectureRuleSupport.classesBelongToConfiguredPackages(
+				layout.basePackage(),
+				configuredPackages);
+	}
+
 	private static ArchRule domainDependencyRules(
 			DomainOrientedLayout layout,
+			List<String> applicationPackages,
 			List<String> apiPackages,
 			List<String> infrastructurePackages) {
 		List<ArchRule> rules = new ArrayList<>();
 		List<String> domainOutside = new ArrayList<>();
-		domainOutside.addAll(layout.applicationPackages());
+		domainOutside.addAll(applicationPackages);
 		domainOutside.addAll(apiPackages);
 		domainOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
@@ -60,7 +86,7 @@ public final class DomainOrientedArchitectureRules {
 		applicationOutside.addAll(infrastructurePackages);
 		addDependencyDirectionRule(
 				rules,
-				layout.applicationPackages(),
+				applicationPackages,
 				applicationOutside,
 				layout,
 				"application classes do not depend on API or infrastructure");
