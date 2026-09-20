@@ -25,7 +25,7 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void baseline_accepts_concrete_and_external_interface_bean_returns() {
+	void baseline_accepts_concrete_external_and_functional_interface_bean_returns() {
 		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.valid";
 		String basePackage = rootPackage + ".application";
 

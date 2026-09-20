@@ -1,6 +1,7 @@
 package io.github.psm8.archunit.fixtures.beanexposure.valid.application.config;
 
 import io.github.psm8.archunit.fixtures.beanexposure.valid.application.ConcreteBean;
+import io.github.psm8.archunit.fixtures.beanexposure.valid.application.FunctionalBeanContract;
 import io.github.psm8.archunit.fixtures.beanexposure.valid.application2.ExternalPrefixContract;
 import io.github.psm8.archunit.fixtures.beanexposure.valid.external.ExternalContract;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,12 @@ final class BeanExposureConfiguration {
 	@Bean
 	ConcreteBean concreteBean() {
 		return new ConcreteBean();
+	}
+
+	@Bean
+	FunctionalBeanContract functionalBeanContract() {
+		return () -> {
+		};
 	}
 
 	@Bean

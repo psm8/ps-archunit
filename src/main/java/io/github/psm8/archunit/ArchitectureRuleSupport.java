@@ -262,13 +262,15 @@ final class ArchitectureRuleSupport {
 			String basePackage,
 			List<String> allowedApplicationInterfaceTypes) {
 		return new ArchCondition<>(
-				"return a concrete type, an external interface, or an allowed application interface") {
+				"return a concrete type, an external interface, a functional application interface, "
+						+ "or an allowed application interface") {
 			@Override
 			public void check(JavaMethod method, ConditionEvents events) {
 				JavaClass returnType = method.getRawReturnType();
 				boolean applicationInterface = returnType.isInterface()
 						&& isInBasePackage(returnType.getPackageName(), basePackage);
 				if (applicationInterface
+						&& !returnType.isAnnotatedWith(FunctionalInterface.class)
 						&& !allowedApplicationInterfaceTypes.contains(returnType.getName())) {
 					events.add(SimpleConditionEvent.violated(method,
 							method.getFullName() + " returns interface "

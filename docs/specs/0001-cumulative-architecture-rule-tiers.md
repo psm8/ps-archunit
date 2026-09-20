@@ -236,11 +236,12 @@ content describe the same model.
   customization remains supported unless removed explicitly above.
 - Baseline bean exposure is based on the declared `@Bean` return type:
   concrete application-owned types and interfaces outside the application
-  base package pass; application-owned interface types fail by default.
-  `allowedApplicationInterfaceBeanTypes(...)` allows exact fully qualified
-  application-owned interface names only. Null, blank, simple, wildcard, and
-  package-pattern values are invalid. The rule does not inspect method bodies
-  or infer ports and use cases.
+  base package pass; application-owned interfaces annotated with
+  `@FunctionalInterface` also pass. Other application-owned interface types
+  fail by default. `allowedApplicationInterfaceBeanTypes(...)` allows exact
+  fully qualified application-owned interface names only. Null, blank, simple,
+  wildcard, and package-pattern values are invalid. The rule does not inspect
+  method bodies or infer ports and use cases.
 - Record the bean exposure decision in ADR 0002.
 - Update current architecture Markdown, glossary, README, and ADR content to
   use the same tier and package vocabulary.

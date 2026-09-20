@@ -94,10 +94,11 @@ external representations without coupling delivery code to technical
 mechanisms.
 
 Bean exposure uses each `@Bean` method's declared return type. Concrete
-application-owned types and external interfaces pass. Application-owned
-interfaces fail unless their exact fully qualified name is configured with
-`allowedApplicationInterfaceBeanTypes(...)`. Selector values reject null,
-blank, simple, wildcard, and package-pattern forms.
+application-owned types, external interfaces, and interfaces annotated with
+`@FunctionalInterface` pass. Other application-owned interfaces fail unless
+their exact fully qualified name is configured with
+`allowedApplicationInterfaceBeanTypes(...)`. Selector values reject null, blank,
+simple, wildcard, and package-pattern forms.
 
 ## Configured layouts
 

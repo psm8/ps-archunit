@@ -16,6 +16,7 @@ Baseline bean exposure uses the declared return type:
 
 - concrete return types pass;
 - interfaces outside the application base package pass;
+- application-owned interfaces annotated with `@FunctionalInterface` pass;
 - application-owned interfaces fail by default;
 - exact fully qualified application interface names may be allowed through
   `allowedApplicationInterfaceBeanTypes(...)`.
