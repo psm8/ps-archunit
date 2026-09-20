@@ -32,7 +32,9 @@ public final class HexagonalArchitectureRules {
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.inboundAdapterPackages()
 				.outboundAdapterPackages()
-				.mixedAdapterPackages(basePackage + ".adapter..")
+				.mixedAdapterPackages(
+						LayoutSupport.verticalPackagePatterns(
+								basePackage, "adapter..").toArray(String[]::new))
 				.build();
 		return hexagonal(layout);
 	}
@@ -202,13 +204,14 @@ public final class HexagonalArchitectureRules {
 	}
 
 	private static ArchRule adapterContainment(HexagonalLayout layout) {
-		String adapterRoot = layout.basePackage() + ".adapter..";
+		List<String> adapterRoots = LayoutSupport.verticalPackagePatterns(
+				layout.basePackage(), "adapter..");
 		String[] configured = ArchitectureRuleSupport.adapterPackages(layout);
 		if (configured.length == 0) {
 			return ArchitectureRuleSupport.emptyRule();
 		}
 		return classes().that()
-				.resideInAnyPackage(adapterRoot)
+				.resideInAnyPackage(adapterRoots.toArray(String[]::new))
 				.and().haveSimpleNameEndingWith(layout.adapterSuffix())
 				.should().resideInAnyPackage(configured)
 				.as("adapter implementations are in configured adapter package groups")

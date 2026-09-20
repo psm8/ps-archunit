@@ -21,14 +21,13 @@ public final class BaselineLayout {
 
 	private BaselineLayout(Builder builder) {
 		basePackage = builder.basePackage;
-		outputs = List.copyOf(builder.outputs);
-		dependencyBans = List.copyOf(builder.dependencyBans);
-		cyclePatterns = List.copyOf(builder.cyclePatterns);
-		cycleDependencyIgnores = List.copyOf(builder.cycleDependencyIgnores);
-		publicConfigurationClasses = List.copyOf(builder.publicConfigurationClasses);
-		publicConfigurationProperties = List.copyOf(builder.publicConfigurationProperties);
-		allowedApplicationInterfaceBeanTypes =
-				List.copyOf(builder.allowedApplicationInterfaceBeanTypes);
+		outputs = LayoutSupport.resolvePatterns(builder.outputs, basePackage);
+		dependencyBans = resolveDependencyBans(builder.dependencyBans, basePackage);
+		cyclePatterns = LayoutSupport.resolvePatterns(builder.cyclePatterns, basePackage);
+		cycleDependencyIgnores = resolvePatternPairs(builder.cycleDependencyIgnores, basePackage);
+		publicConfigurationClasses = LayoutSupport.resolvePatterns(builder.publicConfigurationClasses, basePackage);
+		publicConfigurationProperties = LayoutSupport.resolvePatterns(builder.publicConfigurationProperties, basePackage);
+		allowedApplicationInterfaceBeanTypes = List.copyOf(builder.allowedApplicationInterfaceBeanTypes);
 		outputSuffix = builder.outputSuffix;
 	}
 
@@ -223,5 +222,28 @@ public final class BaselineLayout {
 			}
 			return new BaselineLayout(this);
 		}
+	}
+
+	private static List<PatternPair> resolvePatternPairs(
+			List<PatternPair> pairs, String basePackage) {
+		List<PatternPair> resolved = new ArrayList<>();
+		for (PatternPair pair : pairs) {
+			resolved.add(new PatternPair(
+					LayoutSupport.resolveBasePackage(pair.source(), basePackage),
+					LayoutSupport.resolveBasePackage(pair.target(), basePackage)));
+		}
+		return List.copyOf(resolved);
+	}
+
+	private static List<DependencyBan> resolveDependencyBans(
+			List<DependencyBan> bans, String basePackage) {
+		List<DependencyBan> resolved = new ArrayList<>();
+		for (DependencyBan ban : bans) {
+			resolved.add(new DependencyBan(
+					LayoutSupport.resolvePatterns(ban.sourcePackages(), basePackage),
+					LayoutSupport.resolvePatterns(ban.bannedPackages(), basePackage),
+					resolvePatternPairs(ban.ignoredDependencies(), basePackage)));
+		}
+		return List.copyOf(resolved);
 	}
 }

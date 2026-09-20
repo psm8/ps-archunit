@@ -40,15 +40,22 @@ architecture tiers.
 
 The three immutable cumulative layouts expose only the selectors owned by their
 tier. Higher builders copy lower snapshots. Level 2 defaults include domain,
-application, base API, base infrastructure, and model-framework groups; they
-do not include adapter defaults. Level 3 adds ports and adapters. Replacement
-methods replace defaults; `add...` methods append. Level 3 uses declared API
-plus inbound adapters and declared infrastructure plus outbound/mixed adapters
-as internal effective groups. API package customization remains on the
+application, API, base infrastructure, and model-framework groups; each
+architecture group has direct and one-feature vertical variants. Level 3 adds
+ports and directional adapters with the same direct and one-feature defaults.
+Replacement methods replace defaults; `add...` methods append. The lax alias
+uses direct and one-feature mixed adapter roots. Level 3 uses declared API plus
+inbound adapters and declared infrastructure plus outbound/mixed adapters as
+internal effective groups. API package customization remains on the
 domain-oriented layout; the hexagonal layout inherits it through promotion and
 does not repeat the API selector on its public surface. Component annotations
 are not package selectors. Configuration is discovered from annotations instead
 of being represented as a package group.
+
+Configured package selectors support an exact `{base}` substitution. After
+substitution, `*` matches exactly one package segment and `..` matches
+descendants. The same substitution applies to dependency-ban package groups
+and configured pattern-pair endpoints.
 
 
 Level 2 API direction bans only dependencies on infrastructure. API packages

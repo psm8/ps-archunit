@@ -45,6 +45,27 @@ This completeness check validates the consumer's imported scope. It does not
 invent an infrastructure fallback for classes that the configured vocabulary
 does not describe.
 
+## Default package topology
+
+The default Level 2 groups cover both direct and one-feature vertical layouts:
+
+```text
+{base}.domain..              {base}.*.domain..
+{base}.application..         {base}.*.application..
+{base}.api..                 {base}.*.api..
+{base}.infrastructure..      {base}.*.infrastructure..
+```
+
+Level 3 adds the same direct and one-feature variants for inbound and outbound
+ports under `application.port.in` and `application.port.out`, and for
+directional adapters under `adapter.in` and `adapter.out`. The `laxHexagonal`
+alias uses direct and one-feature `adapter..` roots for mixed adapters.
+
+Here `{base}` is an exact substitution token, not an additional matcher.
+After substitution, `*` matches exactly one package segment and `..` matches
+descendants. A package such as `{base}.messaging.domain` therefore matches the
+feature-local domain group without changing the architecture level.
+
 ## 1. Infrastructure-centric architecture
 
 The system is primarily shaped by technical mechanisms such as frameworks,

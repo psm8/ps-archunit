@@ -19,13 +19,13 @@ public final class DomainOrientedLayout {
 
 	private DomainOrientedLayout(Builder builder) {
 		baseline = builder.baseline.build();
-		domain = List.copyOf(builder.domain);
-		applicationPackages = List.copyOf(builder.applicationPackages);
-		apiPackages = List.copyOf(builder.apiPackages);
-		infrastructurePackages = List.copyOf(builder.infrastructurePackages);
-		domainModelFrameworkPackages = List.copyOf(builder.domainModelFrameworkPackages);
-		frameworkDependencyPackages = List.copyOf(builder.frameworkDependencyPackages);
-		dependencyDirectionIgnores = List.copyOf(builder.dependencyDirectionIgnores);
+		domain = LayoutSupport.resolvePatterns(builder.domain, basePackage());
+		applicationPackages = LayoutSupport.resolvePatterns(builder.applicationPackages, basePackage());
+		apiPackages = LayoutSupport.resolvePatterns(builder.apiPackages, basePackage());
+		infrastructurePackages = LayoutSupport.resolvePatterns(builder.infrastructurePackages, basePackage());
+		domainModelFrameworkPackages = LayoutSupport.resolvePatterns(builder.domainModelFrameworkPackages, basePackage());
+		frameworkDependencyPackages = LayoutSupport.resolvePatterns(builder.frameworkDependencyPackages, basePackage());
+		dependencyDirectionIgnores = resolvePatternPairs(builder.dependencyDirectionIgnores, basePackage());
 	}
 
 	public static Builder builder(String basePackage) {
@@ -280,18 +280,29 @@ public final class DomainOrientedLayout {
 
 		public DomainOrientedLayout build() {
 			if (!domainConfigured) {
-				LayoutSupport.prependPatterns(domain, baselinePackage() + ".domain..");
+				LayoutSupport.prependPatterns(
+						domain,
+						LayoutSupport.verticalPackagePatterns(
+								baselinePackage(), "domain..").toArray(String[]::new));
 			}
 			if (!applicationConfigured) {
 				LayoutSupport.prependPatterns(
-						applicationPackages, baselinePackage() + ".application..");
+						applicationPackages,
+						LayoutSupport.verticalPackagePatterns(
+								baselinePackage(), "application..").toArray(String[]::new));
 			}
 			if (!apiConfigured) {
-				LayoutSupport.prependPatterns(apiPackages, baselinePackage() + ".api..");
+				LayoutSupport.prependPatterns(
+						apiPackages,
+						LayoutSupport.verticalPackagePatterns(
+								baselinePackage(), "api..").toArray(String[]::new));
 			}
 			if (!infrastructureConfigured) {
 				LayoutSupport.prependPatterns(
-						infrastructurePackages, baselinePackage() + ".infrastructure..");
+						infrastructurePackages,
+						LayoutSupport.verticalPackagePatterns(
+								baselinePackage(), "infrastructure..")
+								.toArray(String[]::new));
 			}
 			if (!domainModelFrameworkConfigured) {
 				LayoutSupport.prependPatterns(
@@ -329,5 +340,16 @@ public final class DomainOrientedLayout {
 
 	private static BaselineLayout.Builder copyBaseline(BaselineLayout source) {
 		return source.toBuilder();
+	}
+
+	private static List<BaselineLayout.PatternPair> resolvePatternPairs(
+			List<BaselineLayout.PatternPair> pairs, String basePackage) {
+		List<BaselineLayout.PatternPair> resolved = new ArrayList<>();
+		for (BaselineLayout.PatternPair pair : pairs) {
+			resolved.add(new BaselineLayout.PatternPair(
+					LayoutSupport.resolveBasePackage(pair.source(), basePackage),
+					LayoutSupport.resolveBasePackage(pair.target(), basePackage)));
+		}
+		return List.copyOf(resolved);
 	}
 }

@@ -22,13 +22,13 @@ public final class HexagonalLayout {
 
 	private HexagonalLayout(Builder builder) {
 		domainOriented = builder.domainOriented.build();
-		inboundPortPackages = List.copyOf(builder.inboundPortPackages);
-		outboundPortPackages = List.copyOf(builder.outboundPortPackages);
-		inboundAdapterPackages = List.copyOf(builder.inboundAdapterPackages);
-		outboundAdapterPackages = List.copyOf(builder.outboundAdapterPackages);
-		mixedAdapterPackages = List.copyOf(builder.mixedAdapterPackages);
-		portSignatureExceptions = List.copyOf(builder.portSignatureExceptions);
-		nonAdapterClasses = List.copyOf(builder.nonAdapterClasses);
+		inboundPortPackages = LayoutSupport.resolvePatterns(builder.inboundPortPackages, basePackage());
+		outboundPortPackages = LayoutSupport.resolvePatterns(builder.outboundPortPackages, basePackage());
+		inboundAdapterPackages = LayoutSupport.resolvePatterns(builder.inboundAdapterPackages, basePackage());
+		outboundAdapterPackages = LayoutSupport.resolvePatterns(builder.outboundAdapterPackages, basePackage());
+		mixedAdapterPackages = LayoutSupport.resolvePatterns(builder.mixedAdapterPackages, basePackage());
+		portSignatureExceptions = LayoutSupport.resolvePatterns(builder.portSignatureExceptions, basePackage());
+		nonAdapterClasses = LayoutSupport.resolvePatterns(builder.nonAdapterClasses, basePackage());
 		useCaseSuffix = builder.useCaseSuffix;
 		portSuffix = builder.portSuffix;
 		adapterSuffix = builder.adapterSuffix;
@@ -443,19 +443,27 @@ public final class HexagonalLayout {
 		public HexagonalLayout build() {
 			if (!inboundPortsConfigured) {
 				LayoutSupport.prependPatterns(
-						inboundPortPackages, basePackage() + ".application.port.in..");
+						inboundPortPackages,
+						LayoutSupport.verticalPackagePatterns(
+								basePackage(), "application.port.in..").toArray(String[]::new));
 			}
 			if (!outboundPortsConfigured) {
 				LayoutSupport.prependPatterns(
-						outboundPortPackages, basePackage() + ".application.port.out..");
+						outboundPortPackages,
+						LayoutSupport.verticalPackagePatterns(
+								basePackage(), "application.port.out..").toArray(String[]::new));
 			}
 			if (!inboundAdaptersConfigured) {
 				LayoutSupport.prependPatterns(
-						inboundAdapterPackages, basePackage() + ".adapter.in..");
+						inboundAdapterPackages,
+						LayoutSupport.verticalPackagePatterns(
+								basePackage(), "adapter.in..").toArray(String[]::new));
 			}
 			if (!outboundAdaptersConfigured) {
 				LayoutSupport.prependPatterns(
-						outboundAdapterPackages, basePackage() + ".adapter.out..");
+						outboundAdapterPackages,
+						LayoutSupport.verticalPackagePatterns(
+								basePackage(), "adapter.out..").toArray(String[]::new));
 			}
 			useCaseSuffix = LayoutSupport.defaultText(useCaseSuffix, "UseCase");
 			portSuffix = LayoutSupport.defaultText(portSuffix, "Port");

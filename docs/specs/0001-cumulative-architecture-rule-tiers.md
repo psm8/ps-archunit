@@ -32,6 +32,10 @@ Each tier accepts a base package or its matching typed layout:
 `BaselineLayout`, `DomainOrientedLayout`, or `HexagonalLayout`.
 Strict and lax hexagonal convenience profiles remain available as Level 3
 factories. Package layout gains broad API and infrastructure groups.
+Default domain, application, API, infrastructure, port, and adapter groups
+include both direct and one-feature vertical variants. Configured `{base}`
+tokens resolve exactly to the concrete base package, and `*` matches one
+package segment.
 Configuration stops being a logical package group. Documentation and ADR
 content describe the same model.
 
@@ -178,9 +182,14 @@ content describe the same model.
 - Keep API package customization on `DomainOrientedLayout`. `HexagonalLayout`
   inherits a promoted domain-oriented snapshot and uses the API boundary
   internally without repeating API selector methods on its public surface.
-- Standalone Level 2 API defaults include only the base `api` group, and
-  infrastructure defaults include only the base `infrastructure` group.
-  Level 3 lower-tier checks add inbound adapters to the effective API group
+- Standalone Level 2 domain, application, API, and infrastructure defaults
+  include direct and one-feature vertical groups. Level 3 port and directional
+  adapter defaults use the same direct and one-feature shape. Lax mixed
+  adapter defaults use direct and one-feature `adapter..` roots.
+- Resolve `{base}` exactly in configured package selectors, dependency-ban
+  package groups, and pattern-pair endpoints before rules evaluate them.
+  Preserve `*` as a one-package-segment matcher.
+- Level 3 lower-tier checks add inbound adapters to the effective API group
   and outbound/mixed adapters to the effective infrastructure group. Level 3
   treats declared inbound and outbound port groups as application/core.
 - Keep directional and mixed adapter selectors needed by Level 3 wiring and
@@ -235,7 +244,8 @@ content describe the same model.
   promotion isolation, HexagonalLayout API-surface hiding, effective Level 3
   groups, application/core port derivation, classification completeness,
   external imported classes, overlapping groups, and empty-group no-op
-  behavior.
+  behavior. Verify direct and feature-local vertical fixtures, `{base}`
+  substitution, and one-segment `*` matching.
 - Preserve regression coverage for strict and lax aliases, onion direction,
   cycles, ports, adapter wiring and containment, component annotations,
   outputs, beans, configuration behavior, and dependency bans. Bean tests must

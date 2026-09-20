@@ -50,16 +50,37 @@ Replace `com.acme.orders` with the consumer's root package:
 ```text
 com.acme.orders.domain..
 com.acme.orders.application..
-com.acme.orders.application.port.in..
-com.acme.orders.application.port.out..
 com.acme.orders.api..
 com.acme.orders.infrastructure..
+com.acme.orders.application.port.in..
+com.acme.orders.application.port.out..
 com.acme.orders.adapter.in..
 com.acme.orders.adapter.out..
 ```
 
+The default selectors also include one-feature vertical variants:
+
+```text
+com.acme.orders.*.domain..
+com.acme.orders.*.application..
+com.acme.orders.*.api..
+com.acme.orders.*.infrastructure..
+com.acme.orders.*.application.port.in..
+com.acme.orders.*.application.port.out..
+com.acme.orders.*.adapter.in..
+com.acme.orders.*.adapter.out..
+```
+
+This supports layouts such as
+`com.acme.orders.messaging.domain` and
+`com.acme.orders.messaging.adapter.out`. The `*` matcher represents exactly
+one package segment; `..` matches descendants below that point.
+
 `basePackage` must be a concrete Java package name. It cannot contain
-wildcards or a trailing dot.
+wildcards or a trailing dot. Configured package patterns support the `{base}`
+macro. It is replaced exactly with the configured base package when the layout
+is built, so `{base}.*.application..` resolves to
+`com.acme.orders.*.application..` for the base package above.
 
 Level 2 declares API and infrastructure groups independently. Level 3
 effectively treats inbound adapters as API code and outbound or mixed adapters
@@ -120,18 +141,26 @@ Level 1 defaults:
 
 Standalone Level 2 defaults:
 
-- Domain: `basePackage.domain..`
-- Application: `basePackage.application..`
-- API: `basePackage.api..`
-- Infrastructure: `basePackage.infrastructure..`
+- Domain: `basePackage.domain..`, `basePackage.*.domain..`
+- Application: `basePackage.application..`, `basePackage.*.application..`
+- API: `basePackage.api..`, `basePackage.*.api..`
+- Infrastructure: `basePackage.infrastructure..`,
+  `basePackage.*.infrastructure..`
 - Model framework namespaces: JPA, Jakarta/Javax validation, and Jackson annotations
 
 Standalone Level 3 adds:
 
-- Inbound ports: `basePackage.application.port.in..`
-- Outbound ports: `basePackage.application.port.out..`
-- Inbound adapters: `basePackage.adapter.in..`
-- Outbound adapters: `basePackage.adapter.out..`
+- Inbound ports: `basePackage.application.port.in..`,
+  `basePackage.*.application.port.in..`
+- Outbound ports: `basePackage.application.port.out..`,
+  `basePackage.*.application.port.out..`
+- Inbound adapters: `basePackage.adapter.in..`,
+  `basePackage.*.adapter.in..`
+- Outbound adapters: `basePackage.adapter.out..`,
+  `basePackage.*.adapter.out..`
+
+The `laxHexagonal` convenience factory uses
+`basePackage.adapter..` and `basePackage.*.adapter..` as mixed adapter roots.
 
 Each configurable package group has replacement and append semantics. For
 example, domain-oriented API configuration uses `apiPackages(...)` to replace

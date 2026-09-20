@@ -41,6 +41,24 @@ final class LayoutSupport {
 		return value;
 	}
 
+	static String resolveBasePackage(String pattern, String basePackage) {
+		return requiredPattern(pattern).replace("{base}", basePackage);
+	}
+
+	static List<String> resolvePatterns(List<String> patterns, String basePackage) {
+		List<String> resolved = new ArrayList<>();
+		for (String pattern : patterns) {
+			resolved.add(resolveBasePackage(pattern, basePackage));
+		}
+		return List.copyOf(resolved);
+	}
+
+	static List<String> verticalPackagePatterns(String basePackage, String suffix) {
+		return List.of(
+				basePackage + "." + requiredPattern(suffix),
+				basePackage + ".*." + requiredPattern(suffix));
+	}
+
 	static String requiredTypeName(String value) {
 		if (value == null
 				|| value.isBlank()

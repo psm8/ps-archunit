@@ -351,6 +351,13 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void strict_profile_accepts_feature_local_vertical_slice() {
+		String basePackage = "io.github.psm8.archunit.fixtures.vertical";
+
+		strictHexagonal(basePackage).check(imported(basePackage));
+	}
+
+	@Test
 	void strict_and_lax_factories_are_not_deprecated() throws NoSuchMethodException {
 		assertFalse(HexagonalArchitectureRules.class
 				.getMethod("strictHexagonal", String.class)
@@ -444,27 +451,50 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void hexagonal_layout_uses_feature_oriented_defaults() {
+	void hexagonal_layout_uses_direct_and_feature_vertical_defaults() {
 		HexagonalLayout layout = HexagonalLayout.of("com.acme.orders");
 
-		assertEquals(List.of("com.acme.orders.domain.."), layout.domain());
 		assertEquals(
-				List.of("com.acme.orders.application.."),
+				List.of(
+						"com.acme.orders.domain..",
+						"com.acme.orders.*.domain.."),
+				layout.domain());
+		assertEquals(
+				List.of(
+						"com.acme.orders.application..",
+						"com.acme.orders.*.application.."),
 				layout.applicationPackages());
 		assertEquals(
-				List.of("com.acme.orders.adapter.in.."),
+				List.of(
+						"com.acme.orders.adapter.in..",
+						"com.acme.orders.*.adapter.in.."),
 				layout.inboundAdapterPackages());
 		assertEquals(
-				List.of("com.acme.orders.adapter.out.."),
+				List.of(
+						"com.acme.orders.adapter.out..",
+						"com.acme.orders.*.adapter.out.."),
 				layout.outboundAdapterPackages());
 		assertEquals(List.of(), layout.mixedAdapterPackages());
 		assertEquals(
-				List.of("com.acme.orders.api.."),
+				List.of(
+						"com.acme.orders.api..",
+						"com.acme.orders.*.api.."),
 				layout.apiPackages());
 		assertEquals(
 				List.of(
-						"com.acme.orders.infrastructure.."),
+						"com.acme.orders.infrastructure..",
+						"com.acme.orders.*.infrastructure.."),
 				layout.infrastructurePackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.application.port.in..",
+						"com.acme.orders.*.application.port.in.."),
+				layout.inboundPortPackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.application.port.out..",
+						"com.acme.orders.*.application.port.out.."),
+				layout.outboundPortPackages());
 		assertEquals(
 				List.of(
 						"jakarta.persistence..",
@@ -473,6 +503,67 @@ class ArchitectureRuleTiersTest {
 						"javax.validation..",
 						"com.fasterxml.jackson.annotation.."),
 				layout.domainModelFrameworkPackages());
+	}
+
+	@Test
+	void base_macro_resolves_custom_package_selectors() {
+		HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
+				.domain("{base}.*.domain..")
+				.applicationPackages("{base}.*.application..")
+				.inboundPortPackages("{base}.*.application.port.in..")
+				.outboundPortPackages("{base}.*.application.port.out..")
+				.inboundAdapterPackages("{base}.*.adapter.in..")
+				.outboundAdapterPackages("{base}.*.adapter.out..")
+				.mixedAdapterPackages("{base}.*.adapter..")
+				.dependencyBans(BaselineLayout.DependencyBan
+						.of("{base}.source..", "{base}.forbidden..")
+						.ignoring(
+								"{base}.source.Allowed",
+								"{base}.forbidden.Forbidden"))
+				.outputs("{base}.*.api..")
+				.build();
+
+		assertEquals(List.of("com.acme.orders.*.domain.."), layout.domain());
+		assertEquals(
+				List.of("com.acme.orders.*.application.."),
+				layout.applicationPackages());
+		assertEquals(
+				List.of("com.acme.orders.*.application.port.in.."),
+				layout.inboundPortPackages());
+		assertEquals(
+				List.of("com.acme.orders.*.application.port.out.."),
+				layout.outboundPortPackages());
+		assertEquals(
+				List.of("com.acme.orders.*.adapter.in.."),
+				layout.inboundAdapterPackages());
+		assertEquals(
+				List.of("com.acme.orders.*.adapter.out.."),
+				layout.outboundAdapterPackages());
+		assertEquals(
+				List.of("com.acme.orders.*.adapter.."),
+				layout.mixedAdapterPackages());
+		assertEquals(
+				List.of("com.acme.orders.source.."),
+				layout.dependencyBans().get(0).sourcePackages());
+		assertEquals(
+				List.of("com.acme.orders.forbidden.."),
+				layout.dependencyBans().get(0).bannedPackages());
+		assertEquals(
+				new BaselineLayout.PatternPair(
+						"com.acme.orders.source.Allowed",
+						"com.acme.orders.forbidden.Forbidden"),
+				layout.dependencyBans().get(0).ignoredDependencies().get(0));
+		assertEquals(List.of("com.acme.orders.*.api.."), layout.outputs());
+	}
+
+	@Test
+	void star_matches_exactly_one_vertical_feature_segment() {
+		assertTrue(ArchitectureRuleSupport.matches(
+				"com.acme.orders.messaging.domain.Order",
+				"com.acme.orders.*.domain.."));
+		assertFalse(ArchitectureRuleSupport.matches(
+				"com.acme.orders.messaging.shipping.domain.Order",
+				"com.acme.orders.*.domain.."));
 	}
 
 	@Test
@@ -529,9 +620,15 @@ class ArchitectureRuleTiersTest {
 	void domain_oriented_defaults_exclude_adapter_groups() {
 		DomainOrientedLayout layout = DomainOrientedLayout.of("com.acme.orders");
 
-		assertEquals(List.of("com.acme.orders.api.."), layout.apiPackages());
 		assertEquals(
-				List.of("com.acme.orders.infrastructure.."),
+				List.of(
+						"com.acme.orders.api..",
+						"com.acme.orders.*.api.."),
+				layout.apiPackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.infrastructure..",
+						"com.acme.orders.*.infrastructure.."),
 				layout.infrastructurePackages());
 	}
 
@@ -565,20 +662,33 @@ class ArchitectureRuleTiersTest {
 	void hexagonal_lower_groups_include_adapters_only_effectively() {
 		HexagonalLayout layout = HexagonalLayout.of("com.acme.orders");
 
-		assertEquals(List.of("com.acme.orders.api.."), layout.apiPackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.api..",
+						"com.acme.orders.*.api.."),
+				layout.apiPackages());
 		assertEquals(
 				List.of(
 						"com.acme.orders.application..",
+						"com.acme.orders.*.application..",
 						"com.acme.orders.application.port.in..",
-						"com.acme.orders.application.port.out.."),
+						"com.acme.orders.*.application.port.in..",
+						"com.acme.orders.application.port.out..",
+						"com.acme.orders.*.application.port.out.."),
 				layout.applicationCorePackages());
 		assertEquals(
-				List.of("com.acme.orders.api..", "com.acme.orders.adapter.in.."),
+				List.of(
+						"com.acme.orders.api..",
+						"com.acme.orders.*.api..",
+						"com.acme.orders.adapter.in..",
+						"com.acme.orders.*.adapter.in.."),
 				layout.effectiveApiPackages());
 		assertEquals(
 				List.of(
 						"com.acme.orders.infrastructure..",
-						"com.acme.orders.adapter.out.."),
+						"com.acme.orders.*.infrastructure..",
+						"com.acme.orders.adapter.out..",
+						"com.acme.orders.*.adapter.out.."),
 				layout.effectiveInfrastructurePackages());
 	}
 
@@ -762,6 +872,17 @@ class ArchitectureRuleTiersTest {
 		assertRuleFails(
 				strictHexagonal("io.github.psm8.archunit.fixtures.invalid.containment"),
 				"io.github.psm8.archunit.fixtures.invalid.containment");
+	}
+
+	@Test
+	void strict_profile_rejects_feature_local_adapters_outside_configured_groups() {
+		String basePackage =
+				"io.github.psm8.archunit.fixtures.invalid.verticalcontainment";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.addApplicationPackages(basePackage + ".feature.adapter.other..")
+				.build();
+
+		assertRuleFails(hexagonal(layout), basePackage);
 	}
 
 	@Test

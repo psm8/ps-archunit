@@ -46,8 +46,19 @@ and framework integration.
 It is outside the core.
 
 **Feature-first package layout**:
-A layout that groups code by business capability first, then separates domain, application, API, and infrastructure concerns inside each feature.
+A layout that groups code by business capability first, then separates domain,
+application, API, and infrastructure concerns inside each feature. The
+library's default selectors cover both direct groups such as
+`basePackage.domain..` and one-feature groups such as
+`basePackage.*.domain..`.
 _Avoid_: Treating feature-first layout as proof of domain-oriented design.
+
+**Vertical default package pattern**:
+The default package vocabulary includes a direct root and a one-feature
+variant for domain, application, API, infrastructure, port, and adapter
+groups. The `*` matcher consumes exactly one package segment; `..` matches
+descendants. A configured `{base}` token is replaced exactly with the concrete
+base package before package matching.
 
 **Pragmatic domain-driven design**:
 DDD-informed design that keeps business behavior explicit while allowing selected framework dependencies where their cost is justified.
@@ -159,7 +170,8 @@ isolation, ports, adapters, and adapter wiring/containment.
 
 **API package group**:
 Inbound delivery code that may depend on application and domain types, but not
-infrastructure types. By default it includes `basePackage.api..` in Level 2.
+infrastructure types. By default it includes `basePackage.api..` and
+`basePackage.*.api..` in Level 2.
 Level 3 lower-tier checks use the declared API group plus inbound adapter
 groups as an internal effective group. API package customization belongs to
 the domain-oriented architecture level; hexagonal architecture inherits that
@@ -174,10 +186,10 @@ port groups. It is not a required package named `core`.
 **Infrastructure package group**:
 Outbound adapters, persistence, clients, messaging, configuration, and
 framework integration. By default it includes `basePackage.infrastructure..`
-in Level 2. Level 3 lower-tier checks use the declared infrastructure group
-plus outbound and mixed adapter groups as an internal effective group. Every
-class in the effective group is also a classification match for Level 2/3
-completeness.
+and `basePackage.*.infrastructure..` in Level 2. Level 3 lower-tier checks use
+the declared infrastructure group plus outbound and mixed adapter groups as an
+internal effective group. Every class in the effective group is also a
+classification match for Level 2/3 completeness.
 
 **Model-framework package group**:
 Configured namespaces whose annotation types may be used as domain model
@@ -186,8 +198,9 @@ that namespace.
 
 **Strict and lax aliases**:
 Level 3 convenience factories on `HexagonalArchitectureRules`.
-Both delegate to Level 3; strict keeps directional adapter defaults, while lax
-uses one direction-neutral mixed adapter group.
+Both delegate to Level 3; strict keeps direct and one-feature directional
+adapter defaults, while lax uses direct and one-feature direction-neutral
+mixed adapter roots.
 
 **Tier rule classes**:
 `BaselineArchitectureRules` owns Level 1, `DomainOrientedArchitectureRules`
