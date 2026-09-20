@@ -331,6 +331,14 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void hexagonal_allows_java_se_javax_dependencies_by_default() {
+		assertDoesNotThrow(() -> hexagonal("io.github.psm8.archunit.fixtures.valid")
+				.check(new ClassFileImporter().importClasses(
+						io.github.psm8.archunit.fixtures.valid.application
+								.JavaSeDataSourceService.class)));
+	}
+
+	@Test
 	void baseline_discovers_configuration_from_annotations_without_package_selectors() {
 		String basePackage = "io.github.psm8.archunit.fixtures.composition.valid";
 
@@ -783,6 +791,21 @@ class ArchitectureRuleTiersTest {
 		assertFalse(layout.frameworkDependencyPackages().contains("org.springframework.."));
 		assertTrue(layout.frameworkDependencyPackages()
 				.contains("jakarta.persistence.."));
+	}
+
+	@Test
+	void default_framework_dependencies_exclude_java_se_javax_packages() {
+		DomainOrientedLayout layout = DomainOrientedLayout.of("com.acme.orders");
+
+		assertFalse(layout.frameworkDependencyPackages().contains("javax.."));
+		assertTrue(layout.frameworkDependencyPackages()
+				.contains("javax.persistence.."));
+		assertTrue(layout.frameworkDependencyPackages()
+				.contains("javax.validation.."));
+		assertTrue(layout.frameworkDependencyPackages()
+				.contains("javax.servlet.."));
+		assertTrue(layout.frameworkDependencyPackages()
+				.contains("javax.transaction"));
 	}
 
 	@Test

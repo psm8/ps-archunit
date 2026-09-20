@@ -190,6 +190,12 @@ domain classes. A runtime service, client, or other non-annotation type from
 an allowlisted namespace is still rejected by `domainOriented` and
 `hexagonal`.
 
+Default framework isolation includes all `jakarta..` packages and explicit
+legacy Java EE roots under `javax`, such as `javax.persistence..`,
+`javax.validation..`, `javax.servlet..`, and `javax.transaction`. It does not
+classify all `javax..` packages as frameworks because Java SE also provides
+packages such as `javax.sql`, `javax.naming`, and `javax.lang.model`.
+
 Transaction placement is an opt-in Level 2 policy. Configure both an exact
 annotation type name with `transactionAnnotation(...)` and explicit package
 patterns with `transactionPackages(...)`. The builder rejects partial
