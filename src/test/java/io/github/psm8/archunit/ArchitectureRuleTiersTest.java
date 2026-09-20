@@ -37,7 +37,10 @@ class ArchitectureRuleTiersTest {
 		String rootPackage = "io.github.psm8.archunit.fixtures.beanexposure.invalid.local";
 		String basePackage = rootPackage + ".application";
 
-		assertRuleFails(baseline(basePackage), rootPackage);
+		assertBeanExposureRuleFails(
+				baseline(basePackage),
+				rootPackage,
+				basePackage + ".LocalBeanContract");
 	}
 
 	@Test
@@ -59,7 +62,10 @@ class ArchitectureRuleTiersTest {
 				.allowedApplicationInterfaceBeanTypes(basePackage + ".SomeOtherContract")
 				.build();
 
-		assertRuleFails(baseline(layout), rootPackage);
+		assertBeanExposureRuleFails(
+				baseline(layout),
+				rootPackage,
+				basePackage + ".UnlistedBeanContract");
 	}
 
 	@Test
@@ -772,5 +778,17 @@ class ArchitectureRuleTiersTest {
 			com.tngtech.archunit.lang.ArchRule rule,
 			String packageName) {
 		assertThrows(AssertionError.class, () -> rule.check(imported(packageName)));
+	}
+
+	private static void assertBeanExposureRuleFails(
+			com.tngtech.archunit.lang.ArchRule rule,
+			String packageName,
+			String expectedReturnType) {
+		AssertionError failure = assertThrows(
+				AssertionError.class,
+				() -> rule.check(imported(packageName)));
+		String message = failure.getMessage();
+		assertTrue(message != null
+				&& message.contains("returns interface " + expectedReturnType));
 	}
 }
