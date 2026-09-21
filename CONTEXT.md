@@ -139,6 +139,32 @@ driven port.
 **Architecture rule**:
 An executable constraint evaluated against imported Java classes.
 
+**Architecture verification**:
+An automated check that evaluates architecture rules against a system's
+compiled structure. It is a structural quality check, not a business-behavior
+test and not a requirement to start the system.
+
+**Architecture verification runner**:
+A boundary tool that imports compiled consumer classes, evaluates a selected
+architecture level, and reports the verification outcome for local or
+continuous-integration use. It does not execute consumer application code.
+
+**Verification configuration**:
+An external, versioned description of the architecture level, package
+boundaries, dependency policies, exceptions, and naming conventions used for
+one verification run. It expresses the same architecture vocabulary as the
+public layout builders.
+
+**Compiled architecture input**:
+The consumer system's compiled classes and required dependency bytecode supplied
+to architecture verification. Source compilation and application startup are
+outside this boundary.
+
+**Architecture violation**:
+A structural dependency, classification, naming, boundary, or configuration
+failure reported when imported classes do not satisfy the selected architecture
+rules.
+
 **Classification completeness**:
 The Level 2 and Level 3 requirement that every imported class under
 `basePackage..` belongs to at least one configured domain, application/core,

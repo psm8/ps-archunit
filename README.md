@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -42,6 +42,114 @@ Artifact coordinates:
 The library returns ArchUnit `ArchRule` objects. ArchUnit is therefore a
 compile-visible dependency of the library and is available to the consumer's
 architecture tests.
+
+The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
+SnakeYAML is not a dependency of the core `ps-archunit` JAR.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT`.
+
+## Architecture verification CLI
+
+Repository contributors can build the executable shaded artifact:
+
+```shell
+mvn -B -pl ps-archunit-cli -am package
+```
+
+Example `architecture.yml`:
+
+```yaml
+schemaVersion: 1
+tier: hexagonal
+basePackage: com.acme.orders
+hexagonal:
+  adapterMode: strict
+  replace:
+    outputs: ["{base}.."]
+    domain: ["{base}.domain.."]
+    applicationPackages: ["{base}.application.."]
+    apiPackages: ["{base}.api.."]
+    infrastructurePackages: ["{base}.infrastructure.."]
+  append:
+    dependencyDirectionIgnores:
+      - source: "{base}.application.LegacyBridge"
+        target: "{base}.api.LegacyController"
+```
+
+Run it against compiled bytecode:
+
+```shell
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+  --config architecture.yml \
+  --classes target/classes \
+  --classpath dependency-a.jar \
+  --classpath dependency-b.jar \
+  --format text \
+  --output architecture-report.txt
+```
+
+`--config` is required except with `--version`. `--classes` accepts directories
+or JARs; it may be repeated and accepts comma-separated paths. Without it, the
+runner uses existing `target/classes` and `target/test-classes`. Repeat
+`--classpath` for additional JAR or directory inputs, or use
+`--classpath-file` with one path per line. Every `--classes`, `--classpath`,
+and `--classpath-file` entry is imported and checked as part of the effective
+architecture input; these options are not resolution-only. `--format` defaults
+to `text`; `json` emits stable
+`version`, `tier`, `input`, `pass`, and `violations` fields. Reports go to
+stdout unless `--output` names a file. `--version` reads Maven artifact
+metadata.
+
+The schema accepts `baseline`, `domainOriented`, and `hexagonal` tiers. Every
+layout builder option is available under explicit `replace` and `append`
+sections, including dependency-ban scoped exceptions and transaction policy.
+Hexagonal `adapterMode` is `strict` or `lax`; lax mode clears directional
+adapter defaults and uses mixed `adapter..` roots.
+
+Exit codes:
+
+- `0`: architecture passes;
+- `1`: architecture violations;
+- `2`: configuration, input, import, runtime, or reporting failure.
+
+Consumer CI downloads the shaded artifact from the Maven coordinates. Configure
+the repository that contains the requested version, especially for
+`0.2.0-SNAPSHOT`, then use the downloaded `all` classifier:
+
+```shell
+mkdir -p target/ps-archunit
+mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all \
+  -DoutputDirectory=target/ps-archunit
+java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+  --config architecture.yml
+```
+
+GitHub Actions example (add to a consumer workflow):
+
+```yaml
+- name: Verify architecture
+  run: |
+    mkdir -p target/ps-archunit
+    mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all \
+      -DoutputDirectory=target/ps-archunit
+    java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+      --config architecture.yml
+```
+
+GitLab CI example:
+
+```yaml
+architecture:
+  image: maven:3.9.9-eclipse-temurin-21
+  script:
+    - mkdir -p target/ps-archunit
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar --config architecture.yml
+```
+
+The snippets are consumer-side examples; this repository contains no active
+workflow or publishing automation.
 
 ## Consumer package contract
 
@@ -329,7 +437,7 @@ for the public API decision.
 ## Maven Central release
 
 The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
-metadata. The current development version is `0.1.0-SNAPSHOT`; change it to a
+metadata. The current development version is `0.2.0-SNAPSHOT`; change it to a
 non-SNAPSHOT release before publishing. Release signing, Central Portal
 credentials, namespace ownership, and upload remain deliberate release-operator
 steps.

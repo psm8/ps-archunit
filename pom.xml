@@ -5,11 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.psm8</groupId>
-    <artifactId>ps-archunit</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <artifactId>ps-archunit-parent</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>ps-archunit</module>
+        <module>ps-archunit-cli</module>
+    </modules>
 
-    <name>ps-archunit</name>
+    <name>ps-archunit parent</name>
     <description>Reusable ArchUnit rules for Java hexagonal architecture</description>
     <url>https://github.com/psm8/ps-archunit</url>
 
