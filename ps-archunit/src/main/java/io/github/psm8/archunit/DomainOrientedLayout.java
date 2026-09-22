@@ -103,6 +103,10 @@ public final class DomainOrientedLayout {
 		return baseline.cycleDependencyIgnores();
 	}
 
+	public ConfigurationVisibility configurationVisibility() {
+		return baseline.configurationVisibility();
+	}
+
 	public List<String> publicConfigurationClasses() {
 		return baseline.publicConfigurationClasses();
 	}
@@ -211,6 +215,11 @@ public final class DomainOrientedLayout {
 
 		public Builder ignoreCycleDependency(String source, String target) {
 			baseline.ignoreCycleDependency(source, target);
+			return this;
+		}
+
+		public Builder configurationVisibility(ConfigurationVisibility value) {
+			baseline.configurationVisibility(value);
 			return this;
 		}
 

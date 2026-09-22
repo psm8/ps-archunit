@@ -73,6 +73,9 @@ public final class BaselineArchitectureRules {
 	}
 
 	private static ArchRule configurationVisibility(BaselineLayout layout) {
+		if (layout.configurationVisibility() == ConfigurationVisibility.UNRESTRICTED) {
+			return ArchitectureRuleSupport.emptyRule();
+		}
 		return classes().that().areAnnotatedWith(ArchitectureRuleSupport.CONFIGURATION)
 				.and(DescribedPredicate.not(
 						ArchitectureRuleSupport.classPattern(

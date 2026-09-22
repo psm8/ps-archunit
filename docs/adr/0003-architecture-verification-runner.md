@@ -31,8 +31,8 @@ The CLI:
   clients;
 - requires an external, versioned verification configuration;
 - maps every current public layout-builder option, including nested dependency
-  bans, scoped exceptions, transaction policy, port and adapter settings, and
-  replacement/append semantics;
+  bans, scoped exceptions, configuration visibility policy, transaction policy,
+  port and adapter settings, and replacement/append semantics;
 - supports explicit `baseline`, `domainOriented`, and `hexagonal` tiers;
 - supports strict and lax Hexagonal adapter defaults through configuration;
 - rejects unknown configuration keys and invalid combinations before rule

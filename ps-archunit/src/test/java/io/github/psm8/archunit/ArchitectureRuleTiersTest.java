@@ -346,6 +346,95 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void baseline_allows_public_configuration_classes_by_default() {
+		assertDoesNotThrow(() -> baseline(
+				"io.github.psm8.archunit.fixtures.configurationvisibility")
+				.check(new ClassFileImporter().importClasses(
+						io.github.psm8.archunit.fixtures.configurationvisibility.config
+								.PublicConfiguration.class)));
+	}
+
+	@Test
+	void package_private_configuration_visibility_rejects_public_configuration_classes() {
+		String basePackage = "io.github.psm8.archunit.fixtures.configurationvisibility";
+		BaselineLayout layout = BaselineLayout.builder(basePackage)
+				.configurationVisibility(ConfigurationVisibility.PACKAGE_PRIVATE)
+				.build();
+
+		assertRuleFails(
+				baseline(layout),
+				io.github.psm8.archunit.fixtures.configurationvisibility.config
+						.PublicConfiguration.class);
+	}
+
+	@Test
+	void package_private_configuration_visibility_allows_exact_configuration_class_exception() {
+		String basePackage = "io.github.psm8.archunit.fixtures.configurationvisibility";
+		String configurationClass =
+				"io.github.psm8.archunit.fixtures.configurationvisibility.config.PublicConfiguration";
+		BaselineLayout layout = BaselineLayout.builder(basePackage)
+				.configurationVisibility(ConfigurationVisibility.PACKAGE_PRIVATE)
+				.publicConfigurationClasses(configurationClass)
+				.build();
+
+		assertDoesNotThrow(() -> baseline(layout).check(new ClassFileImporter().importClasses(
+				io.github.psm8.archunit.fixtures.configurationvisibility.config
+						.PublicConfiguration.class)));
+	}
+
+	@Test
+	void configuration_properties_visibility_remains_independent_from_configuration_visibility() {
+		String basePackage = "io.github.psm8.archunit.fixtures.configurationvisibility";
+		Class<?> propertiesClass =
+				io.github.psm8.archunit.fixtures.configurationvisibility.config
+						.PublicConfigurationProperties.class;
+
+		assertRuleFails(baseline(basePackage), propertiesClass);
+
+		BaselineLayout allowlisted = BaselineLayout.builder(basePackage)
+				.publicConfigurationProperties(propertiesClass.getName())
+				.build();
+		assertDoesNotThrow(() -> baseline(allowlisted).check(
+				new ClassFileImporter().importClasses(propertiesClass)));
+
+		BaselineLayout packagePrivateConfiguration = BaselineLayout.builder(basePackage)
+				.configurationVisibility(ConfigurationVisibility.PACKAGE_PRIVATE)
+				.build();
+		assertRuleFails(baseline(packagePrivateConfiguration), propertiesClass);
+	}
+
+	@Test
+	void configuration_visibility_survives_to_builder_and_tier_promotion() {
+		String basePackage = "io.github.psm8.archunit.fixtures.configurationvisibility";
+		BaselineLayout baseline = BaselineLayout.builder(basePackage)
+				.configurationVisibility(ConfigurationVisibility.PACKAGE_PRIVATE)
+				.build();
+		BaselineLayout baselineCopy = baseline.toBuilder().build();
+		DomainOrientedLayout domain = DomainOrientedLayout.builder(baselineCopy)
+				.infrastructurePackages(basePackage + ".config..")
+				.build();
+		DomainOrientedLayout domainCopy = domain.toBuilder().build();
+		HexagonalLayout hexagonal = HexagonalLayout.builder(domainCopy).build();
+		HexagonalLayout hexagonalCopy = hexagonal.toBuilder().build();
+
+		assertEquals(ConfigurationVisibility.PACKAGE_PRIVATE, baselineCopy.configurationVisibility());
+		assertEquals(ConfigurationVisibility.PACKAGE_PRIVATE, domain.configurationVisibility());
+		assertEquals(ConfigurationVisibility.PACKAGE_PRIVATE, domainCopy.configurationVisibility());
+		assertEquals(ConfigurationVisibility.PACKAGE_PRIVATE, hexagonal.configurationVisibility());
+		assertEquals(
+				ConfigurationVisibility.PACKAGE_PRIVATE,
+				hexagonalCopy.configurationVisibility());
+		assertRuleFails(
+				domainOriented(domain),
+				io.github.psm8.archunit.fixtures.configurationvisibility.config
+						.PublicConfiguration.class);
+		assertRuleFails(
+				hexagonal(hexagonal),
+				io.github.psm8.archunit.fixtures.configurationvisibility.config
+						.PublicConfiguration.class);
+	}
+
+	@Test
 	void hexagonal_does_not_extend_composition_root_exception_to_application_services() {
 		String basePackage = "io.github.psm8.archunit.fixtures.composition.nontransitive";
 

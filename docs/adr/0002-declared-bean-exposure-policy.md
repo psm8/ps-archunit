@@ -27,6 +27,12 @@ values must be exact fully qualified Java type names. Null, blank, simple,
 wildcard, and package-pattern values are rejected. The rule does not inspect
 method bodies or infer port or use-case semantics.
 
+Configuration class visibility is a separate baseline policy. It is
+unrestricted by default and can opt into package-private enforcement; the
+`publicConfigurationClasses(...)` allowlist applies only to that opt-in policy.
+`@ConfigurationProperties` visibility remains independently package-private by
+default.
+
 The allowlist is exposed by cumulative layout builders. The former
 `interfaceBeanReturnTypes(...)` selector is replaced because the exception is
 limited to application-owned interfaces.

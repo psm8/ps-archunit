@@ -34,7 +34,17 @@ class MainTest {
 					basePackage: io.github.psm8.archunit.fixtures.valid
 					""");
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			Path classes = Path.of("..", "ps-archunit", "target", "test-classes");
+			Path classes = Path.of(
+					"..",
+					"ps-archunit",
+					"target",
+					"test-classes",
+					"io",
+					"github",
+					"psm8",
+					"archunit",
+					"fixtures",
+					"valid");
 
 			int exitCode = Main.run(
 					new String[] {
@@ -66,7 +76,17 @@ class MainTest {
 					basePackage: io.github.psm8.archunit.fixtures.valid
 					""");
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			Path classes = Path.of("..", "ps-archunit", "target", "test-classes");
+			Path classes = Path.of(
+					"..",
+					"ps-archunit",
+					"target",
+					"test-classes",
+					"io",
+					"github",
+					"psm8",
+					"archunit",
+					"fixtures",
+					"valid");
 
 			int exitCode = Main.run(
 					new String[] {

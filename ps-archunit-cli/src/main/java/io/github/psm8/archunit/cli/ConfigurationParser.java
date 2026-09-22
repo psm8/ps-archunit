@@ -1,6 +1,7 @@
 package io.github.psm8.archunit.cli;
 
 import io.github.psm8.archunit.BaselineLayout;
+import io.github.psm8.archunit.ConfigurationVisibility;
 import io.github.psm8.archunit.DomainOrientedLayout;
 import io.github.psm8.archunit.HexagonalLayout;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -23,7 +24,8 @@ final class ConfigurationParser {
 			"domainOriented", "hexagonal", "replace", "append");
 	private static final List<String> BASELINE_KEYS = List.of(
 			"outputs", "dependencyBans", "cyclePatterns", "cycleDependencyIgnores",
-			"publicConfigurationClasses", "publicConfigurationProperties",
+			"configurationVisibility", "publicConfigurationClasses",
+			"publicConfigurationProperties",
 			"allowedApplicationInterfaceBeanTypes", "outputSuffix");
 	private static final List<String> DOMAIN_KEYS = List.of(
 			"domain", "applicationPackages", "apiPackages", "infrastructurePackages",
@@ -134,6 +136,8 @@ final class ConfigurationParser {
 		applyCombinedPatterns(replace, append, "cyclePatterns", builder::cyclePatterns);
 		applyPairs(replace, "cycleDependencyIgnores", builder::ignoreCycleDependency);
 		applyPairs(append, "cycleDependencyIgnores", builder::ignoreCycleDependency);
+		applyScalar(replace, "configurationVisibility",
+				value -> builder.configurationVisibility(parseConfigurationVisibility(value)));
 		applyCombinedPatterns(replace, append, "publicConfigurationClasses",
 				builder::publicConfigurationClasses);
 		applyCombinedPatterns(replace, append, "publicConfigurationProperties",
@@ -275,12 +279,21 @@ final class ConfigurationParser {
 			Map<String, Object> replace,
 			Map<String, Object> append) {
 		for (String key : List.of(
-				"outputSuffix", "transactionAnnotation", "useCaseSuffix",
+				"configurationVisibility", "outputSuffix", "transactionAnnotation", "useCaseSuffix",
 				"portSuffix", "adapterSuffix")) {
 			if (append.containsKey(key)) {
 				throw new ConfigurationException(key + " supports replace only");
 			}
 		}
+	}
+
+	private ConfigurationVisibility parseConfigurationVisibility(String value) {
+		return switch (value) {
+			case "unrestricted" -> ConfigurationVisibility.UNRESTRICTED;
+			case "packagePrivate" -> ConfigurationVisibility.PACKAGE_PRIVATE;
+			default -> throw new ConfigurationException(
+					"configurationVisibility must be unrestricted or packagePrivate");
+		};
 	}
 
 	private List<String> keysFor(Tier tier) {

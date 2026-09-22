@@ -117,40 +117,43 @@ content describe the same model.
 28. As a library consumer, I want configuration classes and bean methods found
     from their annotations, so that technical configuration can live in the
     infrastructure layout chosen by the application.
-29. As a library consumer, I want selector replacement and append semantics
+29. As a library consumer, I want configuration class visibility unrestricted
+    by default with an opt-in package-private policy, so existing public
+    configuration remains valid while stricter applications can enforce it.
+30. As a library consumer, I want selector replacement and append semantics
     consistent across package groups, so that custom layouts are predictable.
-30. As a library maintainer, I want each rule group assigned to one tier, so
+31. As a library maintainer, I want each rule group assigned to one tier, so
     that future changes preserve cumulative semantics.
-31. As a library maintainer, I want public factory names to reflect architecture
+32. As a library maintainer, I want public factory names to reflect architecture
     meaning, so that consumers do not infer false differences from legacy
     profile names.
-32. As a library maintainer, I want obsolete strict/lax terminology marked as
+33. As a library maintainer, I want obsolete strict/lax terminology marked as
     compatibility API, so that new documentation teaches the tier model.
-33. As a library maintainer, I want tests to exercise public `ArchRule` seams,
+34. As a library maintainer, I want tests to exercise public `ArchRule` seams,
     so that behavior remains validated without coupling tests to private helper
     methods.
-34. As a library maintainer, I want fixture packages representing valid and
+35. As a library maintainer, I want fixture packages representing valid and
     invalid tier behavior, so that dependency direction and framework policy
     regressions are visible.
-35. As a documentation reader, I want the architecture hierarchy, glossary,
+36. As a documentation reader, I want the architecture hierarchy, glossary,
     README, axes, DDD concepts, and ADR to agree, so that one vocabulary is
     used across design and code.
-36. As a documentation reader, I want the ADR history to explain why the
+37. As a documentation reader, I want the ADR history to explain why the
     cumulative tiers exist, so that the public rule behavior is not surprising.
-37. As a contributor, I want stale `minimal`, `standard`, and full-rule-set
+38. As a contributor, I want stale `minimal`, `standard`, and full-rule-set
     terminology removed from current documentation, so that old semantics are
     not reintroduced.
-38. As a contributor, I want validation to include tests, verification,
+39. As a contributor, I want validation to include tests, verification,
     documentation searches, and diff checks, so that code and written contracts
     stay synchronized.
-39. As a library consumer, I want to opt into transaction-annotation placement
+40. As a library consumer, I want to opt into transaction-annotation placement
     checks at Level 2, so that transaction markers stay on application
     boundaries without making a framework annotation mandatory for every
     consumer.
-40. As a library consumer, I want the transaction annotation name and allowed
+41. As a library consumer, I want the transaction annotation name and allowed
     package patterns configured explicitly, so that the generic library does
     not depend on Spring or assume one transaction framework.
-41. As a library consumer, I want framework and adapter annotations on port
+42. As a library consumer, I want framework and adapter annotations on port
     parameter declarations rejected, so that parameter metadata cannot bypass
     the framework-free port contract.
 
@@ -171,9 +174,10 @@ content describe the same model.
 - Keep `strictHexagonal` and `laxHexagonal` as Level 3 convenience factories.
   Strict uses separate inbound and outbound adapter defaults. Lax uses a
   direction-neutral mixed adapter group.
-- Level 1 owns cycle checks, explicit dependency bans, configuration visibility,
-  configuration proxy mode, bean placement and return-type checks, and
-  immutable boundary output shape.
+- Level 1 owns cycle checks, explicit dependency bans, opt-in package-private
+  configuration visibility, default package-private configuration-properties
+  visibility, configuration proxy mode, bean placement and return-type checks,
+  and immutable boundary output shape.
 - Level 2 owns coarse dependency direction between domain, application, API,
   and infrastructure groups. Domain is inward of application. API is the
   inbound-facing group and may depend on application and domain, but not
@@ -204,9 +208,13 @@ content describe the same model.
   treats declared inbound and outbound port groups as application/core.
 - Keep directional and mixed adapter selectors needed by Level 3 wiring and
   containment rules.
-- Remove configuration and configuration-properties package selectors,
-  accessors, builder state, and defaults. Configuration remains a technical
-  concern enforced through direct configuration and bean annotations.
+- Keep configuration and configuration-properties as annotation-discovered
+  technical concerns rather than package selectors. Configuration class
+  visibility is unrestricted by default, with opt-in package-private
+  enforcement and the existing exact `publicConfigurationClasses(...)`
+  exception. Configuration-properties visibility remains package-private by
+  default with its independent exact `publicConfigurationProperties(...)`
+  exception.
 - Level 3 adds onion direction, strict framework isolation, framework-free port
   contracts, port naming and visibility, outbound adapter wiring, adapter
   visibility, and adapter containment.
@@ -232,8 +240,9 @@ content describe the same model.
   matches are valid, and imported classes outside `basePackage..` are not
   classified.
 - Existing output suffix, dependency-ban, cycle-ignore, port-signature,
-  adapter exception, bean exposure, and configuration visibility
-  customization remains supported unless removed explicitly above.
+  adapter exception, bean exposure, and configuration visibility customization
+  remains supported unless removed explicitly above. Configuration class
+  visibility is unrestricted unless explicitly set to package-private.
 - Baseline bean exposure is based on the declared `@Bean` return type:
   concrete application-owned types and interfaces outside the application
   base package pass; application-owned interfaces annotated with

@@ -139,6 +139,10 @@ public final class HexagonalLayout {
 		return domainOriented.cycleDependencyIgnores();
 	}
 
+	public ConfigurationVisibility configurationVisibility() {
+		return domainOriented.configurationVisibility();
+	}
+
 	public List<String> publicConfigurationClasses() {
 		return domainOriented.publicConfigurationClasses();
 	}
@@ -286,6 +290,11 @@ public final class HexagonalLayout {
 
 		public Builder ignoreCycleDependency(String source, String target) {
 			domainOriented.ignoreCycleDependency(source, target);
+			return this;
+		}
+
+		public Builder configurationVisibility(ConfigurationVisibility value) {
+			domainOriented.configurationVisibility(value);
 			return this;
 		}
 

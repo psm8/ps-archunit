@@ -50,7 +50,10 @@ internal effective groups. API package customization remains on the
 domain-oriented layout; the hexagonal layout inherits it through promotion and
 does not repeat the API selector on its public surface. Component annotations
 are not package selectors. Configuration is discovered from annotations instead
-of being represented as a package group.
+of being represented as a package group. `@Configuration` visibility is
+unrestricted by default and has opt-in package-private enforcement through the
+baseline layout; `@ConfigurationProperties` remains package-private by default
+with its independent exact allowlist.
 
 Configured package selectors support an exact `{base}` substitution. After
 substitution, `*` matches exactly one package segment and `..` matches

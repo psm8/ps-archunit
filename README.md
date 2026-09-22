@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.2.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -45,7 +45,7 @@ architecture tests.
 
 The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
 SnakeYAML is not a dependency of the core `ps-archunit` JAR.
-CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT`.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.0`.
 
 ## Architecture verification CLI
 
@@ -69,6 +69,7 @@ hexagonal:
     applicationPackages: ["{base}.application.."]
     apiPackages: ["{base}.api.."]
     infrastructurePackages: ["{base}.infrastructure.."]
+    # configurationVisibility: packagePrivate
   append:
     dependencyDirectionIgnores:
       - source: "{base}.application.LegacyBridge"
@@ -78,7 +79,7 @@ hexagonal:
 Run it against compiled bytecode:
 
 ```shell
-java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.0-all.jar \
   --config architecture.yml \
   --classes target/classes \
   --classpath dependency-a.jar \
@@ -102,6 +103,11 @@ metadata.
 The schema accepts `baseline`, `domainOriented`, and `hexagonal` tiers. Every
 layout builder option is available under explicit `replace` and `append`
 sections, including dependency-ban scoped exceptions and transaction policy.
+`@Configuration` class visibility is unrestricted by default. Set
+`replace.configurationVisibility` to the exact value `packagePrivate` to
+enforce package-private configuration classes; `unrestricted` disables that
+check. `@ConfigurationProperties` visibility remains package-private by
+default and uses `publicConfigurationProperties` for exact exceptions.
 Hexagonal `adapterMode` is `strict` or `lax`; lax mode clears directional
 adapter defaults and uses mixed `adapter..` roots.
 
@@ -111,16 +117,15 @@ Exit codes:
 - `1`: architecture violations;
 - `2`: configuration, input, import, runtime, or reporting failure.
 
-Consumer CI downloads the shaded artifact from the Maven coordinates. Configure
-the repository that contains the requested version, especially for
-`0.2.0-SNAPSHOT`, then use the downloaded `all` classifier:
+Consumer CI downloads the shaded artifact from Maven Central using the
+coordinates and `all` classifier:
 
 ```shell
 mkdir -p target/ps-archunit
 mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all \
   -DoutputDirectory=target/ps-archunit
-java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar \
   --config architecture.yml
 ```
 
@@ -131,9 +136,9 @@ GitHub Actions example (add to a consumer workflow):
   run: |
     mkdir -p target/ps-archunit
     mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all \
       -DoutputDirectory=target/ps-archunit
-    java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar \
+    java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar \
       --config architecture.yml
 ```
 
@@ -144,12 +149,13 @@ architecture:
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - mkdir -p target/ps-archunit
-    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0-SNAPSHOT:jar:all -DoutputDirectory=target/ps-archunit
-    - java -jar target/ps-archunit/ps-archunit-cli-0.2.0-SNAPSHOT-all.jar --config architecture.yml
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar --config architecture.yml
 ```
 
-The snippets are consumer-side examples; this repository contains no active
-workflow or publishing automation.
+The snippets are consumer-side examples. Release publishing is handled by
+`.github/workflows/publish-release.yml` when a GitHub Release is published
+with a `v0.2.0` tag.
 
 ## Consumer package contract
 
@@ -193,9 +199,11 @@ is built, so `{base}.*.application..` resolves to
 Level 2 declares API and infrastructure groups independently. Level 3
 effectively treats inbound adapters as API code and outbound or mixed adapters
 as infrastructure, and treats inbound and outbound ports as application/core.
-Configuration is also infrastructure, but configuration
-rules find `@Configuration`, `@ConfigurationProperties`, and `@Bean`
-declarations by annotation rather than by a configuration package selector.
+Configuration is also infrastructure, but configuration rules find
+`@Configuration`, `@ConfigurationProperties`, and `@Bean` declarations by
+annotation rather than by a configuration package selector. `@Configuration`
+visibility is unrestricted by default and can opt into package-private
+enforcement; `@ConfigurationProperties` remains package-private by default.
 API and inbound adapter code may depend on application and domain types, but
 not on infrastructure types. This permits translation adapters to normalize
 external representations without coupling delivery code to technical
@@ -351,7 +359,9 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 
 - package-slice cycle checks;
 - explicit dependency bans;
-- package-private internal configuration and configuration-properties classes;
+- unrestricted `@Configuration` classes by default, with opt-in package-private
+  enforcement;
+- package-private internal `@ConfigurationProperties` classes;
 - lite Spring configuration (`proxyBeanMethods = false`);
 - `@Bean` placement and declared return-type exposure policy;
 - record or sealed-interface boundary outputs.
@@ -437,7 +447,19 @@ for the public API decision.
 ## Maven Central release
 
 The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
-metadata. The current development version is `0.2.0-SNAPSHOT`; change it to a
-non-SNAPSHOT release before publishing. Release signing, Central Portal
-credentials, namespace ownership, and upload remain deliberate release-operator
-steps.
+metadata. Release profile `release` signs every artifact with GPG and publishes
+through the Sonatype Central Portal.
+
+The first release is `0.2.0`. Publish it by creating a GitHub Release with tag
+`v0.2.0`. The publishing workflow requires these repository secrets:
+
+- `MAVEN_CENTRAL_USERNAME`: Central Portal user-token username;
+- `MAVEN_CENTRAL_TOKEN`: Central Portal user-token password;
+- `MAVEN_GPG_PRIVATE_KEY`: ASCII-armored private signing key;
+- `MAVEN_GPG_PASSPHRASE`: signing-key passphrase.
+
+Publish the corresponding public GPG key to a public keyserver before creating
+the release.
+
+The workflow validates that the release tag matches the Maven project version
+before running `mvn -Prelease deploy`.

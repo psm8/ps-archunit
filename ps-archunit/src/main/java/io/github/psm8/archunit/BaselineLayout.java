@@ -14,6 +14,7 @@ public final class BaselineLayout {
 	private final List<DependencyBan> dependencyBans;
 	private final List<String> cyclePatterns;
 	private final List<PatternPair> cycleDependencyIgnores;
+	private final ConfigurationVisibility configurationVisibility;
 	private final List<String> publicConfigurationClasses;
 	private final List<String> publicConfigurationProperties;
 	private final List<String> allowedApplicationInterfaceBeanTypes;
@@ -25,6 +26,7 @@ public final class BaselineLayout {
 		dependencyBans = resolveDependencyBans(builder.dependencyBans, basePackage);
 		cyclePatterns = LayoutSupport.resolvePatterns(builder.cyclePatterns, basePackage);
 		cycleDependencyIgnores = resolvePatternPairs(builder.cycleDependencyIgnores, basePackage);
+		configurationVisibility = builder.configurationVisibility;
 		publicConfigurationClasses = LayoutSupport.resolvePatterns(builder.publicConfigurationClasses, basePackage);
 		publicConfigurationProperties = LayoutSupport.resolvePatterns(builder.publicConfigurationProperties, basePackage);
 		allowedApplicationInterfaceBeanTypes = List.copyOf(builder.allowedApplicationInterfaceBeanTypes);
@@ -49,6 +51,7 @@ public final class BaselineLayout {
 				.dependencyBans(dependencyBans.toArray(DependencyBan[]::new))
 				.cyclePatterns(cyclePatterns.toArray(String[]::new))
 				.ignoreCycles(cycleDependencyIgnores)
+				.configurationVisibility(configurationVisibility)
 				.publicConfigurationClasses(publicConfigurationClasses.toArray(String[]::new))
 				.publicConfigurationProperties(
 						publicConfigurationProperties.toArray(String[]::new))
@@ -75,6 +78,10 @@ public final class BaselineLayout {
 
 	public List<PatternPair> cycleDependencyIgnores() {
 		return cycleDependencyIgnores;
+	}
+
+	public ConfigurationVisibility configurationVisibility() {
+		return configurationVisibility;
 	}
 
 	public List<String> publicConfigurationClasses() {
@@ -137,6 +144,7 @@ public final class BaselineLayout {
 		private final List<DependencyBan> dependencyBans = new ArrayList<>();
 		private final List<String> cyclePatterns = new ArrayList<>();
 		private final List<PatternPair> cycleDependencyIgnores = new ArrayList<>();
+		private ConfigurationVisibility configurationVisibility = ConfigurationVisibility.UNRESTRICTED;
 		private final List<String> publicConfigurationClasses = new ArrayList<>();
 		private final List<String> publicConfigurationProperties = new ArrayList<>();
 		private final List<String> allowedApplicationInterfaceBeanTypes = new ArrayList<>();
@@ -188,6 +196,11 @@ public final class BaselineLayout {
 
 		private Builder ignoreCycles(List<PatternPair> values) {
 			cycleDependencyIgnores.addAll(values);
+			return this;
+		}
+
+		public Builder configurationVisibility(ConfigurationVisibility value) {
+			configurationVisibility = Objects.requireNonNull(value, "configurationVisibility");
 			return this;
 		}
 

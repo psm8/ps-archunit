@@ -176,6 +176,14 @@ are not classified.
 The Level 1 rule tier. It protects package cycles, explicit dependency bans,
 configuration, bean declarations, and immutable boundary outputs.
 
+**Configuration visibility policy**:
+`@Configuration` class visibility is unrestricted by default. Baseline layouts
+can opt into package-private configuration classes with
+`configurationVisibility(ConfigurationVisibility.PACKAGE_PRIVATE)`. The
+`publicConfigurationClasses(...)` exact allowlist applies only in that opt-in
+mode. `@ConfigurationProperties` visibility remains package-private by default
+and keeps its independent exact allowlist.
+
 **Bean exposure policy**:
 Baseline evaluates the declared return type of each `@Bean` method. Concrete
 application-owned return types and interfaces outside the application's base
@@ -236,7 +244,7 @@ Levels 1–3.
 
 **Baseline layout**:
 The configuration vocabulary for Level 1. It describes technical package
-boundaries, cycle scopes, dependency bans, configuration and bean policy, and
+boundaries, cycle scopes, dependency bans, configuration visibility and bean policy, and
 boundary outputs. It does not expose domain, application, port, or adapter
 concepts.
 

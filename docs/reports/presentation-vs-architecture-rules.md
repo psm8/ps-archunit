@@ -185,7 +185,9 @@ The `baseline` factory covers:
 
 - package-slice cycle checks;
 - explicit, configurable dependency bans;
-- package-private internal configuration and configuration-properties classes;
+- unrestricted `@Configuration` classes by default, with opt-in package-private
+  enforcement;
+- package-private internal `@ConfigurationProperties` classes;
 - lightweight Spring configuration, including `proxyBeanMethods = false`;
 - `@Bean` placement and declared return-type exposure policy;
 - record or sealed-interface boundary outputs.
@@ -241,7 +243,7 @@ are indirectly supported, but are not fully enforced by generic rules.
 | Presentation recommendation | Current repository position | Assessment |
 | --- | --- | --- |
 | Keep domain and application code independent from frameworks. | Directly enforced at Level 2/3, with a narrow composition-root exception and configured model-annotation allowlists. | Strong executable coverage. |
-| Use explicit, lightweight Spring configuration. | Level 1 checks configuration visibility, `@Bean` placement, declared return-type exposure, and `proxyBeanMethods = false`. The library intentionally has no Spring runtime dependency. | Strong for the selected Spring conventions; it does not validate the whole application bootstrap. |
+| Use explicit, lightweight Spring configuration. | Level 1 checks opt-in `@Configuration` visibility, default package-private `@ConfigurationProperties` visibility, `@Bean` placement, declared return-type exposure, and `proxyBeanMethods = false`. The library intentionally has no Spring runtime dependency. | Strong for the selected Spring conventions; configuration class visibility is unrestricted unless enabled, and the rules do not validate the whole application bootstrap. |
 | Inject external dependencies at the boundary. | Ports, adapter contracts, framework-free signatures, and direction rules protect the boundary. | Structural support, but constructor injection itself is not a universal rule. |
 | Use value objects and strong types instead of primitive-heavy models. | DDD concepts and hierarchy documents support explicit business modeling. | Guidance only; ArchUnit cannot reliably infer semantic type strength. |
 | Put transaction orchestration at the application/use-case boundary. | Level 2 can opt into exact transaction-annotation placement in explicit package groups. Level 3 inherits the policy and keeps the configured annotation as a narrow framework-isolation exception. | Placement is structurally enforced when configured; transaction semantics, atomicity, and runtime behavior remain outside generic rules. |
