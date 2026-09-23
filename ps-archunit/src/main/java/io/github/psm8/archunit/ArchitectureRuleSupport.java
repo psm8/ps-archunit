@@ -23,6 +23,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 final class ArchitectureRuleSupport {
 	static final String CONFIGURATION =
 			"org.springframework.context.annotation.Configuration";
+	static final String SPRING_BOOT_CONFIGURATION =
+			"org.springframework.boot.SpringBootConfiguration";
+	static final String SPRING_BOOT_APPLICATION =
+			"org.springframework.boot.autoconfigure.SpringBootApplication";
 	static final String BEAN =
 			"org.springframework.context.annotation.Bean";
 	static final String CONFIGURATION_PROPERTIES =
@@ -68,6 +72,26 @@ final class ArchitectureRuleSupport {
 		};
 	}
 
+	static ArchCondition<JavaClass> haveNoDependenciesOnExceptCompositionRoots(
+			List<String> banned,
+			List<BaselineLayout.PatternPair> exceptions) {
+		return new ArchCondition<>("not depend on banned packages outside composition roots") {
+			@Override
+			public void check(JavaClass source, ConditionEvents events) {
+				if (isCompositionRoot(source)) {
+					return;
+				}
+				for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
+					JavaClass target = dependency.getTargetClass();
+					if (isInAnyPackage(target, banned) && !isIgnored(source, target, exceptions)) {
+						events.add(SimpleConditionEvent.violated(source,
+								dependency.getDescription()));
+					}
+				}
+			}
+		};
+	}
+
 	static ArchRule classesBelongToConfiguredPackages(
 			String basePackage,
 			List<String> configuredPackages) {
@@ -84,6 +108,9 @@ final class ArchitectureRuleSupport {
 		return new ArchCondition<>("belong to one of " + configuredPackages) {
 			@Override
 			public void check(JavaClass item, ConditionEvents events) {
+				if (isCompositionRoot(item)) {
+					return;
+				}
 				boolean configured = configuredPackages.stream()
 						.anyMatch(pattern -> matches(item.getPackageName(), pattern));
 				if (!configured) {
@@ -345,7 +372,22 @@ final class ArchitectureRuleSupport {
 	}
 
 	static boolean isCompositionRoot(JavaClass source) {
-		return source.isAnnotatedWith(CONFIGURATION);
+		return List.of(
+						CONFIGURATION,
+						SPRING_BOOT_CONFIGURATION,
+						SPRING_BOOT_APPLICATION)
+				.stream()
+				.anyMatch(annotation -> source.isAnnotatedWith(annotation)
+						|| source.isMetaAnnotatedWith(annotation));
+	}
+
+	static DescribedPredicate<JavaClass> compositionRootPredicate() {
+		return new DescribedPredicate<>("composition root") {
+			@Override
+			public boolean test(JavaClass input) {
+				return isCompositionRoot(input);
+			}
+		};
 	}
 
 	static boolean isIgnored(
@@ -469,6 +511,8 @@ final class ArchitectureRuleSupport {
 	}
 
 	private static boolean isNonSealedInterface(JavaClass item) {
-		return item.isInterface() && !item.reflect().isSealed();
+		return item.isInterface()
+				&& !item.getSimpleName().equals("package-info")
+				&& !item.reflect().isSealed();
 	}
 }

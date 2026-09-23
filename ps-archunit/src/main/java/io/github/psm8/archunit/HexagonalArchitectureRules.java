@@ -80,6 +80,9 @@ public final class HexagonalArchitectureRules {
 					ArchitectureRuleSupport.classPattern(ignored.source()),
 					ArchitectureRuleSupport.classPattern(ignored.target()));
 		}
+		rule = rule.ignoreDependency(
+				ArchitectureRuleSupport.compositionRootPredicate(),
+				DescribedPredicate.alwaysTrue());
 		return rule;
 	}
 

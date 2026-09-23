@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -45,7 +45,7 @@ architecture tests.
 
 The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
 SnakeYAML is not a dependency of the core `ps-archunit` JAR.
-CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.0`.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.1`.
 
 ## Architecture verification CLI
 
@@ -79,7 +79,7 @@ hexagonal:
 Run it against compiled bytecode:
 
 ```shell
-java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.0-all.jar \
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.1-all.jar \
   --config architecture.yml \
   --classes target/classes \
   --classpath dependency-a.jar \
@@ -123,9 +123,9 @@ coordinates and `all` classifier:
 ```shell
 mkdir -p target/ps-archunit
 mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all \
   -DoutputDirectory=target/ps-archunit
-java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar \
+java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar \
   --config architecture.yml
 ```
 
@@ -136,9 +136,9 @@ GitHub Actions example (add to a consumer workflow):
   run: |
     mkdir -p target/ps-archunit
     mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all \
       -DoutputDirectory=target/ps-archunit
-    java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar \
+    java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar \
       --config architecture.yml
 ```
 
@@ -149,13 +149,13 @@ architecture:
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - mkdir -p target/ps-archunit
-    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.0:jar:all -DoutputDirectory=target/ps-archunit
-    - java -jar target/ps-archunit/ps-archunit-cli-0.2.0-all.jar --config architecture.yml
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar --config architecture.yml
 ```
 
 The snippets are consumer-side examples. Release publishing is handled by
 `.github/workflows/publish-release.yml` when a GitHub Release is published
-with a `v0.2.0` tag.
+with a `v0.2.1` tag.
 
 ## Consumer package contract
 
@@ -385,13 +385,22 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - onion dependency direction;
 - framework isolation for domain and application code;
 - inherited opt-in transaction placement from `DomainOrientedLayout`;
-- explicit `@Configuration` composition roots may assemble framework objects;
+- direct or recursively meta-annotated `@Configuration`,
+  `@SpringBootConfiguration`, and `@SpringBootApplication` classes are
+  recognized as composition roots;
+- composition-root exemptions are source-local for classification completeness,
+  domain direction, onion direction, package cycles, and framework assembly;
+  referenced targets and all non-root classes remain checked;
+- explicit dependency bans, bean placement and exposure, configuration
+  visibility, `proxyBeanMethods`, transaction placement, and port/adapter rules
+  remain active;
 - framework-free public port signatures, including parameter declaration
   annotations. Type-use annotations are outside this check;
 - `UseCase` and `Port` naming and visibility;
 - outbound adapter wiring, visibility, and containment;
-- the composition-root exception is not transitive. It applies to the explicit
-  configuration class, not to arbitrary domain or application classes it calls.
+- the composition-root exception is not transitive. It applies to the
+  recognized root source, not to arbitrary domain or application classes it
+  calls.
 - inbound and outbound ports are classified as application/core;
 - every class under the base package belongs to at least one effective
   architecture group, including declared groups and adapter groups.
@@ -450,8 +459,8 @@ The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
 metadata. Release profile `release` signs every artifact with GPG and publishes
 through the Sonatype Central Portal.
 
-The first release is `0.2.0`. Publish it by creating a GitHub Release with tag
-`v0.2.0`. The publishing workflow requires these repository secrets:
+The current release is `0.2.1`. Publish it by creating a GitHub Release with
+tag `v0.2.1`. The publishing workflow requires these repository secrets:
 
 - `MAVEN_CENTRAL_USERNAME`: Central Portal user-token username;
 - `MAVEN_CENTRAL_TOKEN`: Central Portal user-token password;

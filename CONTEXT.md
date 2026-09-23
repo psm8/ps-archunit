@@ -184,6 +184,17 @@ can opt into package-private configuration classes with
 mode. `@ConfigurationProperties` visibility remains package-private by default
 and keeps its independent exact allowlist.
 
+**Composition root**:
+A class that assembles application behavior with external mechanisms at the
+system boundary. Level 3 recognizes classes directly or recursively
+meta-annotated with `@Configuration`, `@SpringBootConfiguration`, or
+`@SpringBootApplication` by annotation name, without adding a Spring runtime
+dependency. The exemption is source-local: the root itself may be outside
+classification and its outgoing edges may bypass direction, onion, cycle, and
+framework-isolation checks, but referenced targets and ordinary classes remain
+checked. Dependency bans, bean rules, configuration policies, transactions,
+ports, and adapters remain active.
+
 **Bean exposure policy**:
 Baseline evaluates the declared return type of each `@Bean` method. Concrete
 application-owned return types and interfaces outside the application's base

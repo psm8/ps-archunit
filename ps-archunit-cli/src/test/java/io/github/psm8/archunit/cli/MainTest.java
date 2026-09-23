@@ -21,7 +21,8 @@ class MainTest {
 				new PrintStream(new ByteArrayOutputStream()));
 
 		assertEquals(0, exitCode);
-		assertTrue(output.toString().contains("unknown") || output.toString().contains("0.2.0"));
+		assertTrue(output.toString().contains("unknown")
+				|| output.toString().contains("0.2.1"));
 	}
 
 	@Test

@@ -121,7 +121,7 @@ public final class DomainOrientedArchitectureRules {
 		}
 		rules.add(classes().that()
 				.resideInAnyPackage(sourcePackages.toArray(String[]::new))
-				.should(ArchitectureRuleSupport.haveNoDependenciesOn(
+				.should(ArchitectureRuleSupport.haveNoDependenciesOnExceptCompositionRoots(
 						bannedPackages,
 						layout.dependencyDirectionIgnores()))
 				.as(description)

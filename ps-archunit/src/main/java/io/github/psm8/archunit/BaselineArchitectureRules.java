@@ -46,6 +46,9 @@ public final class BaselineArchitectureRules {
 						ArchitectureRuleSupport.classPattern(ignored.source()),
 						ArchitectureRuleSupport.classPattern(ignored.target()));
 			}
+			rule = rule.ignoreDependency(
+					ArchitectureRuleSupport.compositionRootPredicate(),
+					DescribedPredicate.alwaysTrue());
 			rules.add(rule);
 		}
 		return ArchitectureRuleSupport.combine(rules);

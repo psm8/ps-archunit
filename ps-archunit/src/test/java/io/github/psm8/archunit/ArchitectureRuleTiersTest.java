@@ -331,6 +331,32 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void hexagonal_recognizes_direct_and_meta_annotated_boot_composition_roots() {
+		String basePackage = "io.github.psm8.archunit.fixtures.composition.boot";
+
+		assertDoesNotThrow(() -> hexagonal(basePackage).check(imported(basePackage)));
+	}
+
+	@Test
+	void hexagonal_does_not_exempt_composition_roots_from_dependency_bans() {
+		String basePackage = "io.github.psm8.archunit.fixtures.composition.valid";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.dependencyBans(BaselineLayout.DependencyBan.of(
+						basePackage + ".application.config..",
+						basePackage + ".adapter.out.."))
+				.build();
+
+		assertRuleFails(hexagonal(layout), basePackage);
+	}
+
+	@Test
+	void hexagonal_ignores_package_cycle_edges_starting_at_composition_roots() {
+		String basePackage = "io.github.psm8.archunit.fixtures.composition.cycle";
+
+		assertDoesNotThrow(() -> hexagonal(basePackage).check(imported(basePackage)));
+	}
+
+	@Test
 	void hexagonal_allows_java_se_javax_dependencies_by_default() {
 		assertDoesNotThrow(() -> hexagonal("io.github.psm8.archunit.fixtures.valid")
 				.check(new ClassFileImporter().importClasses(
@@ -477,6 +503,13 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
+	void custom_profile_ignores_package_info_in_port_packages() {
+		String basePackage = "io.github.psm8.archunit.fixtures.packageinfo";
+
+		assertDoesNotThrow(() -> hexagonal(basePackage).check(imported(basePackage)));
+	}
+
+	@Test
 	void custom_port_packages_are_application_core_for_level_three() {
 		String basePackage = "io.github.psm8.archunit.fixtures.customports";
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
@@ -501,7 +534,7 @@ class ArchitectureRuleTiersTest {
 	}
 
 	@Test
-	void custom_profile_rejects_nested_package_cycle() {
+	void custom_profile_rejects_real_non_root_package_cycle() {
 		assertRuleFails(
 				hexagonal(HexagonalLayout.of("io.github.psm8.archunit.fixtures.invalid.cycle")),
 				"io.github.psm8.archunit.fixtures.invalid.cycle");

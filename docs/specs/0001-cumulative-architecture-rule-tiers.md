@@ -91,12 +91,12 @@ content describe the same model.
     dependencies point inward through the domain and application core.
 18. As a library consumer, I want Level 3 framework isolation, so that domain
     and application behavior can be tested without framework infrastructure.
-19. As a library consumer, I want explicit configuration composition roots
-    exempt from framework isolation, so that dependency assembly remains
-    possible without weakening business-code rules.
-20. As a library consumer, I want the composition-root exception limited to
-    explicit configuration and bean declarations, so that it does not spread
-    transitively through the core.
+19. As a library consumer, I want direct or meta-annotated Spring composition
+    roots recognized without a Spring runtime dependency, so that standard
+    Boot bootstrap classes do not create false positives.
+20. As a library consumer, I want composition-root exemptions limited to the
+    root source and selected dependency-based checks, so that they do not
+    spread transitively through the core or weaken explicit policy rules.
 21. As a library consumer, I want driving and driven port rules at Level 3, so
     that application-owned contracts remain visible, named, and framework
     independent.
@@ -230,9 +230,16 @@ content describe the same model.
   annotations. Whole-port signature exceptions continue to skip the complete
   signature check. Type-use annotations are outside this change.
 - Level 3 framework isolation applies to domain and application classes.
-  Explicit classes annotated as configuration, and their bean methods, are
-  composition-root exceptions only for their assembly dependencies. The
-  exception is not transitive to other domain or application classes.
+  Classes directly or recursively meta-annotated with `@Configuration`,
+  `@SpringBootConfiguration`, or `@SpringBootApplication` are recognized as
+  composition roots by annotation name. Their source-local assembly
+  dependencies are exempt from framework isolation, classification
+  completeness, domain direction, onion direction, and package-cycle checks.
+  Referenced targets remain checked, and the exception is not transitive to
+  other domain or application classes.
+- Explicit dependency bans, bean placement and exposure, configuration
+  visibility, `proxyBeanMethods`, transaction placement, and port/adapter
+  rules remain active for composition roots.
 - Package groups remain optional. Rules targeting empty groups are no-ops.
   Levels 2 and 3 additionally require every imported class under
   `basePackage..` to match at least one configured domain, application/core,
@@ -268,8 +275,10 @@ content describe the same model.
   domain types, plus an invalid API-to-infrastructure fixture.
 - Add valid model classes using default model annotations and invalid model
   classes using Spring or runtime framework types.
-- Add valid and invalid composition-root fixtures to prove the Level 3
-  exception is narrow and non-transitive.
+- Add valid and invalid composition-root fixtures for direct and
+  meta-annotated Boot roots, root-to-adapter wiring, root-only cycles, ordinary
+  non-root cycles, dependency-ban preservation, and non-transitive framework
+  leakage.
 - Verify typed cumulative layouts, custom API, infrastructure, and
   model-framework package selectors, replacement behavior, append behavior,
   promotion isolation, HexagonalLayout API-surface hiding, effective Level 3
