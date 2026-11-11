@@ -175,6 +175,8 @@ _Avoid_: Calling advisories "violations" or treating them as a softer failure.
 The configured enforcement of a switchable architecture rule: fail (findings
 are architecture violations), advisory (findings are architecture advisories),
 or off. Only selected rules are switchable; all other rules always fail.
+A rule's default mode is the same at every level, except the bean creation
+rule, whose default rises with the level.
 
 **Advisory rule**:
 A switchable architecture rule running in advisory mode. It is evaluated
@@ -189,14 +191,42 @@ classes from one switchable rule. It does not exempt them from any other rule.
 Two Baseline rules over every class under `basePackage..`: no non-private
 setters (named `set…` or fluent accessors writing a same-named field), except
 overrides of a reported supertype setter or of a method the system does not
-own; and no static
-non-final fields. Setters run in advisory mode by default; static non-final
-fields fail by default. A setter declared by a supertype in the base package
-is reported once, at its declaration; overrides of a supertype outside the
-base package are exempt. A class with a non-JDK supertype that could not be
-inspected has all its setters treated as possible overrides.
+own; and no static non-final fields. Setters run in advisory mode by default;
+static non-final fields fail by default. A setter declared by a supertype in
+the base package is reported once, at its declaration; overrides of a
+supertype outside the base package are exempt. A class with a non-JDK
+supertype that could not be inspected has all its setters treated as possible
+overrides. Builder types are not checked for setters; the builder rule
+reports them.
+_Avoid_: Calling builder methods setters. A setter mutates the object itself;
+a builder is a construction API.
+
+**Builder type**:
+A class with a `build()` method that returns another type and at least one
+fluent method that returns the class itself.
+_Avoid_: Recognising builders by Lombok's `@Builder`, which is not present in
+compiled classes.
+
+**Builder rule**:
+A Baseline rule that reports every builder type, and every class whose name
+ends in `Builder`, once, recommending a constructor or factory method. A
+builder that accepts any subset of its fields allows an exponential number of
+ways to construct an object, where a constructor or factory is usually
+enough. `Builder` names the design pattern, so a class with that name that is
+not a builder is reported too. It runs in advisory mode by default.
 _Avoid_: Exempting builders by name; a builder whose `build()` enforces no
-invariants is a setter surface like any other.
+invariants is still an over-flexible construction API.
+
+**Bean creation rule**:
+A Baseline rule that requires beans to be created explicitly, by `@Bean`
+methods or `@Import`, instead of being found by component scanning. It reports
+classes directly annotated with `@Component`, `@Service`, `@ComponentScan`,
+or `@SpringBootApplication`, each with the change that fixes it. Annotations
+that only build on `@Component`, such as `@Configuration`, `@RestController`,
+`@Repository`, or a system's own stereotype, are not reported. Its default
+mode is off at Level 1, advisory at Level 2, and fail at Level 3.
+_Avoid_: Treating a system's own stereotype annotation as checked; it is a
+known gap of matching direct annotations only.
 
 **Interface default method rule**:
 A Level 2+ rule that rejects default methods on interfaces in the domain and
