@@ -3,6 +3,7 @@ package io.github.psm8.archunit.cli;
 import io.github.psm8.archunit.BaselineLayout;
 import io.github.psm8.archunit.ConfigurationVisibility;
 import io.github.psm8.archunit.HexagonalLayout;
+import io.github.psm8.archunit.RuleMode;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -119,6 +120,76 @@ class CliConfigurationTest {
 				""";
 
 		assertThrows(ConfigurationException.class, () -> new ConfigurationParser().parse(yaml));
+	}
+
+	@Test
+	void parses_switchable_rule_modes_and_exceptions() {
+		String yaml = """
+				schemaVersion: 1
+				tier: hexagonal
+				basePackage: com.acme.orders
+				replace:
+				  setterMode: fail
+				  setterExceptions: ["{base}.legacy.."]
+				  staticFieldMode: advisory
+				  defaultMethodMode: off
+				append:
+				  setterExceptions: ["{base}.config.LegacyProperties"]
+				  defaultMethodExceptions: ["{base}.domain.Pricing"]
+				""";
+
+		HexagonalLayout layout = (HexagonalLayout) new ConfigurationParser().parse(yaml).layout();
+
+		assertEquals(RuleMode.FAIL, layout.setterMode());
+		assertEquals(
+				List.of("com.acme.orders.legacy..", "com.acme.orders.config.LegacyProperties"),
+				layout.setterExceptions());
+		assertEquals(RuleMode.ADVISORY, layout.staticFieldMode());
+		assertEquals(RuleMode.OFF, layout.defaultMethodMode());
+		assertEquals(List.of("com.acme.orders.domain.Pricing"), layout.defaultMethodExceptions());
+	}
+
+	@Test
+	void switchable_rule_modes_use_documented_defaults() {
+		String yaml = """
+				schemaVersion: 1
+				tier: baseline
+				basePackage: com.acme.orders
+				""";
+
+		BaselineLayout layout = (BaselineLayout) new ConfigurationParser().parse(yaml).layout();
+
+		assertEquals(RuleMode.ADVISORY, layout.setterMode());
+		assertEquals(RuleMode.FAIL, layout.staticFieldMode());
+	}
+
+	@Test
+	void rejects_invalid_or_appended_rule_modes() {
+		String invalid = """
+				schemaVersion: 1
+				tier: baseline
+				basePackage: com.acme.orders
+				replace:
+				  setterMode: warn
+				""";
+		String appended = """
+				schemaVersion: 1
+				tier: baseline
+				basePackage: com.acme.orders
+				append:
+				  staticFieldMode: off
+				""";
+		String wrongTier = """
+				schemaVersion: 1
+				tier: baseline
+				basePackage: com.acme.orders
+				replace:
+				  defaultMethodMode: off
+				""";
+
+		assertThrows(ConfigurationException.class, () -> new ConfigurationParser().parse(invalid));
+		assertThrows(ConfigurationException.class, () -> new ConfigurationParser().parse(appended));
+		assertThrows(ConfigurationException.class, () -> new ConfigurationParser().parse(wrongTier));
 	}
 
 	@Test

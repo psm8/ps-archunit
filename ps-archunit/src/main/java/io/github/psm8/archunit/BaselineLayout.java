@@ -19,6 +19,10 @@ public final class BaselineLayout {
 	private final List<String> publicConfigurationProperties;
 	private final List<String> allowedApplicationInterfaceBeanTypes;
 	private final String outputSuffix;
+	private final RuleMode setterMode;
+	private final List<String> setterExceptions;
+	private final RuleMode staticFieldMode;
+	private final List<String> staticFieldExceptions;
 
 	private BaselineLayout(Builder builder) {
 		basePackage = builder.basePackage;
@@ -31,6 +35,10 @@ public final class BaselineLayout {
 		publicConfigurationProperties = LayoutSupport.resolvePatterns(builder.publicConfigurationProperties, basePackage);
 		allowedApplicationInterfaceBeanTypes = List.copyOf(builder.allowedApplicationInterfaceBeanTypes);
 		outputSuffix = builder.outputSuffix;
+		setterMode = builder.setterMode;
+		setterExceptions = LayoutSupport.resolvePatterns(builder.setterExceptions, basePackage);
+		staticFieldMode = builder.staticFieldMode;
+		staticFieldExceptions = LayoutSupport.resolvePatterns(builder.staticFieldExceptions, basePackage);
 	}
 
 	public static Builder builder(String basePackage) {
@@ -57,7 +65,11 @@ public final class BaselineLayout {
 						publicConfigurationProperties.toArray(String[]::new))
 				.allowedApplicationInterfaceBeanTypes(
 						allowedApplicationInterfaceBeanTypes.toArray(String[]::new))
-				.outputSuffix(outputSuffix);
+				.outputSuffix(outputSuffix)
+				.setterMode(setterMode)
+				.setterExceptions(setterExceptions.toArray(String[]::new))
+				.staticFieldMode(staticFieldMode)
+				.staticFieldExceptions(staticFieldExceptions.toArray(String[]::new));
 	}
 
 	public String basePackage() {
@@ -98,6 +110,22 @@ public final class BaselineLayout {
 
 	public String outputSuffix() {
 		return outputSuffix;
+	}
+
+	public RuleMode setterMode() {
+		return setterMode;
+	}
+
+	public List<String> setterExceptions() {
+		return setterExceptions;
+	}
+
+	public RuleMode staticFieldMode() {
+		return staticFieldMode;
+	}
+
+	public List<String> staticFieldExceptions() {
+		return staticFieldExceptions;
 	}
 
 	public record DependencyBan(
@@ -149,6 +177,10 @@ public final class BaselineLayout {
 		private final List<String> publicConfigurationProperties = new ArrayList<>();
 		private final List<String> allowedApplicationInterfaceBeanTypes = new ArrayList<>();
 		private String outputSuffix;
+		private RuleMode setterMode = RuleMode.ADVISORY;
+		private final List<String> setterExceptions = new ArrayList<>();
+		private RuleMode staticFieldMode = RuleMode.FAIL;
+		private final List<String> staticFieldExceptions = new ArrayList<>();
 		private boolean outputsConfigured;
 
 		private Builder(String basePackage) {
@@ -221,6 +253,26 @@ public final class BaselineLayout {
 
 		public Builder outputSuffix(String value) {
 			outputSuffix = LayoutSupport.optionalText(value);
+			return this;
+		}
+
+		public Builder setterMode(RuleMode value) {
+			setterMode = Objects.requireNonNull(value, "setterMode");
+			return this;
+		}
+
+		public Builder setterExceptions(String... values) {
+			LayoutSupport.replacePatterns(setterExceptions, values);
+			return this;
+		}
+
+		public Builder staticFieldMode(RuleMode value) {
+			staticFieldMode = Objects.requireNonNull(value, "staticFieldMode");
+			return this;
+		}
+
+		public Builder staticFieldExceptions(String... values) {
+			LayoutSupport.replacePatterns(staticFieldExceptions, values);
 			return this;
 		}
 

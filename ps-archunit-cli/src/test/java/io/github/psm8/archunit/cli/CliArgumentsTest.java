@@ -29,6 +29,30 @@ class CliArgumentsTest {
 	}
 
 	@Test
+	void parses_freeze_store_and_refreeze() {
+		CliArguments arguments = CliArguments.parse(new String[] {
+				"--config", "architecture.yml",
+				"--freeze-store", "archunit_store",
+				"--refreeze"
+		});
+
+		assertEquals(Path.of("archunit_store"), arguments.freezeStore());
+		assertEquals(true, arguments.refreeze());
+		assertEquals(false, CliArguments.parse(new String[] {
+				"--config", "architecture.yml",
+				"--freeze-store", "archunit_store"
+		}).refreeze());
+	}
+
+	@Test
+	void refreeze_requires_a_freeze_store() {
+		assertThrows(ConfigurationException.class, () -> CliArguments.parse(new String[] {
+				"--config", "architecture.yml",
+				"--refreeze"
+		}));
+	}
+
+	@Test
 	void requires_configuration_unless_version_requested() {
 		assertThrows(ConfigurationException.class, () -> CliArguments.parse(new String[] {
 				"--format", "text"

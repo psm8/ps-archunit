@@ -4,6 +4,7 @@ import io.github.psm8.archunit.BaselineLayout;
 import io.github.psm8.archunit.ConfigurationVisibility;
 import io.github.psm8.archunit.DomainOrientedLayout;
 import io.github.psm8.archunit.HexagonalLayout;
+import io.github.psm8.archunit.RuleMode;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -26,11 +27,13 @@ final class ConfigurationParser {
 			"outputs", "dependencyBans", "cyclePatterns", "cycleDependencyIgnores",
 			"configurationVisibility", "publicConfigurationClasses",
 			"publicConfigurationProperties",
-			"allowedApplicationInterfaceBeanTypes", "outputSuffix");
+			"allowedApplicationInterfaceBeanTypes", "outputSuffix",
+			"setterMode", "setterExceptions", "staticFieldMode", "staticFieldExceptions");
 	private static final List<String> DOMAIN_KEYS = List.of(
 			"domain", "applicationPackages", "apiPackages", "infrastructurePackages",
 			"domainModelFrameworkPackages", "frameworkDependencyPackages",
-			"dependencyDirectionIgnores", "transactionAnnotation", "transactionPackages");
+			"dependencyDirectionIgnores", "transactionAnnotation", "transactionPackages",
+			"defaultMethodMode", "defaultMethodExceptions");
 	private static final List<String> HEXAGONAL_KEYS = List.of(
 			"adapterMode",
 			"inboundPortPackages", "outboundPortPackages", "inboundAdapterPackages",
@@ -145,6 +148,11 @@ final class ConfigurationParser {
 		applyCombinedPatterns(replace, append, "allowedApplicationInterfaceBeanTypes",
 				builder::allowedApplicationInterfaceBeanTypes);
 		applyScalar(replace, "outputSuffix", builder::outputSuffix);
+		applyRuleMode(replace, "setterMode", builder::setterMode);
+		applyCombinedPatterns(replace, append, "setterExceptions", builder::setterExceptions);
+		applyRuleMode(replace, "staticFieldMode", builder::staticFieldMode);
+		applyCombinedPatterns(replace, append, "staticFieldExceptions",
+				builder::staticFieldExceptions);
 	}
 
 	private void applyDomain(
@@ -172,6 +180,9 @@ final class ConfigurationParser {
 		applyScalar(replace, "transactionAnnotation", builder::transactionAnnotation);
 		applyPatterns(replace, "transactionPackages", builder::transactionPackages);
 		applyPatterns(append, "transactionPackages", builder::addTransactionPackages);
+		applyRuleMode(replace, "defaultMethodMode", builder::defaultMethodMode);
+		applyCombinedPatterns(replace, append, "defaultMethodExceptions",
+				builder::defaultMethodExceptions);
 	}
 
 	private void applyHexagonal(
@@ -280,7 +291,8 @@ final class ConfigurationParser {
 			Map<String, Object> append) {
 		for (String key : List.of(
 				"configurationVisibility", "outputSuffix", "transactionAnnotation", "useCaseSuffix",
-				"portSuffix", "adapterSuffix")) {
+				"portSuffix", "adapterSuffix", "setterMode", "staticFieldMode",
+				"defaultMethodMode")) {
 			if (append.containsKey(key)) {
 				throw new ConfigurationException(key + " supports replace only");
 			}
@@ -294,6 +306,29 @@ final class ConfigurationParser {
 			default -> throw new ConfigurationException(
 					"configurationVisibility must be unrestricted or packagePrivate");
 		};
+	}
+
+	private static void applyRuleMode(
+			Map<String, Object> section,
+			String key,
+			java.util.function.Consumer<RuleMode> consumer) {
+		if (section.containsKey(key)) {
+			consumer.accept(parseRuleMode(key, section.get(key)));
+		}
+	}
+
+	private static RuleMode parseRuleMode(String key, Object value) {
+		// YAML 1.1 reads an unquoted off as boolean false.
+		if (Boolean.FALSE.equals(value) || "off".equals(value)) {
+			return RuleMode.OFF;
+		}
+		if ("fail".equals(value)) {
+			return RuleMode.FAIL;
+		}
+		if ("advisory".equals(value)) {
+			return RuleMode.ADVISORY;
+		}
+		throw new ConfigurationException(key + " must be fail, advisory, or off");
 	}
 
 	private List<String> keysFor(Tier tier) {

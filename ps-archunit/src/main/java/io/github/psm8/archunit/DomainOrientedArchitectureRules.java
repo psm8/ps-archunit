@@ -45,9 +45,36 @@ public final class DomainOrientedArchitectureRules {
 								effectiveApiPackages,
 								effectiveInfrastructurePackages),
 						domainModelFrameworkRules(layout),
-						transactionPlacementRules(layout)))
+						transactionPlacementRules(layout),
+						SwitchableRuleSupport.select(layout.defaultMethodMode(), RuleMode.FAIL,
+								() -> SwitchableRuleSupport.defaultMethodRule(
+										layout, effectiveApplicationPackages))))
 				.as("the domain-oriented architecture under " + layout.basePackage())
 				.because("domain and application boundaries protect business behavior");
+	}
+
+	public static ArchRule domainOrientedAdvisories(String basePackage) {
+		return domainOrientedAdvisories(DomainOrientedLayout.of(basePackage));
+	}
+
+	/**
+	 * Returns the cumulative Level 1–2 switchable rules configured in advisory
+	 * mode. Their findings never fail {@link #domainOriented}.
+	 */
+	public static ArchRule domainOrientedAdvisories(DomainOrientedLayout layout) {
+		ArchitectureRuleSupport.requireLayout(layout);
+		return domainOrientedAdvisories(layout, layout.applicationPackages())
+				.as("the domain-oriented architecture advisories under " + layout.basePackage());
+	}
+
+	static ArchRule domainOrientedAdvisories(
+			DomainOrientedLayout layout,
+			List<String> effectiveApplicationPackages) {
+		return ArchitectureRuleSupport.combine(List.of(
+				BaselineArchitectureRules.switchableRules(layout.baseline(), RuleMode.ADVISORY),
+				SwitchableRuleSupport.select(layout.defaultMethodMode(), RuleMode.ADVISORY,
+						() -> SwitchableRuleSupport.defaultMethodRule(
+								layout, effectiveApplicationPackages))));
 	}
 
 	private static ArchRule classificationRules(

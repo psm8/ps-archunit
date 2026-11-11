@@ -57,6 +57,22 @@ public final class HexagonalArchitectureRules {
 				.because("dependencies point inward from adapters toward application and domain");
 	}
 
+	public static ArchRule hexagonalAdvisories(String basePackage) {
+		return hexagonalAdvisories(HexagonalLayout.of(basePackage));
+	}
+
+	/**
+	 * Returns the cumulative Level 1–3 switchable rules configured in advisory
+	 * mode. Their findings never fail {@link #hexagonal}.
+	 */
+	public static ArchRule hexagonalAdvisories(HexagonalLayout layout) {
+		ArchitectureRuleSupport.requireLayout(layout);
+		return DomainOrientedArchitectureRules.domainOrientedAdvisories(
+						layout.domainOriented(),
+						layout.applicationCorePackages())
+				.as("the hexagonal architecture advisories under " + layout.basePackage());
+	}
+
 	private static ArchRule onionRule(HexagonalLayout layout) {
 		var rule = onionArchitecture().withOptionalLayers(true);
 		if (!layout.domain().isEmpty()) {

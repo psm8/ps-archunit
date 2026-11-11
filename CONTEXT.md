@@ -165,6 +165,44 @@ A structural dependency, classification, naming, boundary, or configuration
 failure reported when imported classes do not satisfy the selected architecture
 rules.
 
+**Architecture advisory**:
+A structural finding reported when imported classes do not satisfy an advisory
+rule. It is reported separately from architecture violations and never changes
+the verification outcome.
+_Avoid_: Calling advisories "violations" or treating them as a softer failure.
+
+**Rule mode**:
+The configured enforcement of a switchable architecture rule: fail (findings
+are architecture violations), advisory (findings are architecture advisories),
+or off. Only selected rules are switchable; all other rules always fail.
+
+**Advisory rule**:
+A switchable architecture rule running in advisory mode. It is evaluated
+alongside, but separately from, the failing rules of the selected architecture
+level.
+
+**Rule exception**:
+An exact fully qualified class name or a package pattern that exempts matching
+classes from one switchable rule. It does not exempt them from any other rule.
+
+**Mutable state rules**:
+Two Baseline rules over every class under `basePackage..`: no non-private
+setters (named `set…` or fluent accessors writing a same-named field), except
+overrides of methods declared outside the base package; and no static
+non-final fields. Setters run in advisory mode by default; static non-final
+fields fail by default.
+
+**Interface default method rule**:
+A Level 2+ rule that rejects default methods on interfaces in the domain and
+application/core groups, which at Level 3 include ports. Interfaces in API,
+infrastructure, and adapter groups are outside its scope. Sealed interfaces
+and `@FunctionalInterface` types are exempt. It fails by default.
+
+**Frozen violation**:
+An architecture violation recorded in a committed violation store and
+tolerated by later runs until it is fixed. Only violations are frozen, never
+advisories. A missing store fails the run rather than being recreated silently.
+
 **Classification completeness**:
 The Level 2 and Level 3 requirement that every imported class under
 `basePackage..` belongs to at least one configured domain, application/core,

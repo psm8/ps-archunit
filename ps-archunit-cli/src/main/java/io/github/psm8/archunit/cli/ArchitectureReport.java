@@ -7,7 +7,8 @@ record ArchitectureReport(
 		String tier,
 		List<String> input,
 		boolean pass,
-		List<String> violations) {
+		List<String> violations,
+		List<String> advisories) {
 	String render(ReportFormat format) {
 		return format == ReportFormat.JSON ? json() : text();
 	}
@@ -25,6 +26,10 @@ record ArchitectureReport(
 		for (String violation : violations) {
 			output.append("- ").append(violation).append('\n');
 		}
+		output.append("advisories:\n");
+		for (String advisory : advisories) {
+			output.append("- ").append(advisory).append('\n');
+		}
 		return output.toString();
 	}
 
@@ -33,7 +38,8 @@ record ArchitectureReport(
 				+ ",\"tier\":" + quote(tier)
 				+ ",\"input\":" + strings(input)
 				+ ",\"pass\":" + pass
-				+ ",\"violations\":" + strings(violations) + "}\n";
+				+ ",\"violations\":" + strings(violations)
+				+ ",\"advisories\":" + strings(advisories) + "}\n";
 	}
 
 	private static String strings(List<String> values) {

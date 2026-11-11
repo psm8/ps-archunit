@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -45,7 +45,7 @@ architecture tests.
 
 The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
 SnakeYAML is not a dependency of the core `ps-archunit` JAR.
-CLI coordinates: `io.github.psm8:ps-archunit-cli:0.2.1`.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.3.0`.
 
 ## Architecture verification CLI
 
@@ -79,7 +79,7 @@ hexagonal:
 Run it against compiled bytecode:
 
 ```shell
-java -jar ps-archunit-cli/target/ps-archunit-cli-0.2.1-all.jar \
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.3.0-all.jar \
   --config architecture.yml \
   --classes target/classes \
   --classpath dependency-a.jar \
@@ -96,9 +96,27 @@ runner uses existing `target/classes` and `target/test-classes`. Repeat
 and `--classpath-file` entry is imported and checked as part of the effective
 architecture input; these options are not resolution-only. `--format` defaults
 to `text`; `json` emits stable
-`version`, `tier`, `input`, `pass`, and `violations` fields. Reports go to
-stdout unless `--output` names a file. `--version` reads Maven artifact
-metadata.
+`version`, `tier`, `input`, `pass`, `violations`, and `advisories` fields.
+Advisories never change `pass` or the exit code. Reports go to stdout unless
+`--output` names a file. `--version` reads Maven artifact metadata.
+
+### Freezing existing violations
+
+`--freeze-store <dir>` tolerates violations already recorded in a violation
+store and fails only on new ones. Commit the store directory to the consumer
+repository. Create or re-record it explicitly with `--refreeze`:
+
+```shell
+java -jar ps-archunit-cli-0.3.0-all.jar --config architecture.yml \
+  --freeze-store architecture-store --refreeze
+```
+
+A missing store fails the run with exit code `2` instead of being recreated.
+Fixed violations drop out of the store automatically. Only violations are
+frozen; advisories are always reported. Frozen entries are matched by
+violation message text, so ps-archunit treats a reworded violation message as
+a breaking change (see
+[ADR 0006](docs/adr/0006-freezing-and-stable-violation-messages.md)).
 
 The schema accepts `baseline`, `domainOriented`, and `hexagonal` tiers. Every
 layout builder option is available under explicit `replace` and `append`
@@ -110,6 +128,20 @@ check. `@ConfigurationProperties` visibility remains package-private by
 default and uses `publicConfigurationProperties` for exact exceptions.
 Hexagonal `adapterMode` is `strict` or `lax`; lax mode clears directional
 adapter defaults and uses mixed `adapter..` roots.
+
+Switchable rules take a mode under `replace` (`fail`, `advisory`, or `off`)
+and exceptions under `replace` or `append`:
+
+```yaml
+replace:
+  setterMode: fail            # default: advisory
+  staticFieldMode: fail       # default: fail
+  defaultMethodMode: advisory # default: fail; domainOriented and hexagonal only
+append:
+  setterExceptions: ["{base}.config.LegacyProperties", "{base}.legacy.."]
+  staticFieldExceptions: []
+  defaultMethodExceptions: []
+```
 
 Exit codes:
 
@@ -123,9 +155,9 @@ coordinates and `all` classifier:
 ```shell
 mkdir -p target/ps-archunit
 mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-  -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.3.0:jar:all \
   -DoutputDirectory=target/ps-archunit
-java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar \
+java -jar target/ps-archunit/ps-archunit-cli-0.3.0-all.jar \
   --config architecture.yml
 ```
 
@@ -136,9 +168,9 @@ GitHub Actions example (add to a consumer workflow):
   run: |
     mkdir -p target/ps-archunit
     mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-      -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.3.0:jar:all \
       -DoutputDirectory=target/ps-archunit
-    java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar \
+    java -jar target/ps-archunit/ps-archunit-cli-0.3.0-all.jar \
       --config architecture.yml
 ```
 
@@ -149,13 +181,13 @@ architecture:
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - mkdir -p target/ps-archunit
-    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.2.1:jar:all -DoutputDirectory=target/ps-archunit
-    - java -jar target/ps-archunit/ps-archunit-cli-0.2.1-all.jar --config architecture.yml
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.3.0:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.3.0-all.jar --config architecture.yml
 ```
 
 The snippets are consumer-side examples. Release publishing is handled by
 `.github/workflows/publish-release.yml` when a GitHub Release is published
-with a `v0.2.1` tag.
+with a `v0.3.0` tag.
 
 ## Consumer package contract
 
@@ -364,7 +396,14 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - package-private internal `@ConfigurationProperties` classes;
 - lite Spring configuration (`proxyBeanMethods = false`);
 - `@Bean` placement and declared return-type exposure policy;
-- record or sealed-interface boundary outputs.
+- record or sealed-interface boundary outputs;
+- switchable: no static non-final fields (default `FAIL`);
+- switchable: no non-private setters (default `ADVISORY`). A setter is a
+  non-static method named `set` + uppercase letter with one parameter, or a
+  fluent accessor `x(T)` that writes the field `x` (as generated by Lombok
+  `@Accessors(fluent = true)`). Overrides of methods declared outside the base
+  package, such as `setBeanName`, are allowed; supply those dependencies as
+  CLI classpath input so they can be resolved.
 
 ### Level 2: `domainOriented`
 
@@ -377,7 +416,11 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - optionally, the configured transaction annotation may be used only on
   classes and methods in the configured transaction packages.
 - every class under the base package belongs to at least one configured
-  architecture group.
+  architecture group;
+- switchable: interfaces in the domain and application groups have no default
+  methods (default `FAIL`). Sealed interfaces and `@FunctionalInterface`
+  types are exempt; API, infrastructure, and adapter interfaces are out of
+  scope.
 
 ### Level 3: `hexagonal`
 
@@ -401,12 +444,31 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - the composition-root exception is not transitive. It applies to the
   recognized root source, not to arbitrary domain or application classes it
   calls.
-- inbound and outbound ports are classified as application/core;
+- inbound and outbound ports are classified as application/core, so the
+  default-method rule covers them;
 - every class under the base package belongs to at least one effective
   architecture group, including declared groups and adapter groups.
 
 Component annotations are not package-layout selectors and do not trigger a
 separate selector rule.
+
+### Switchable rules
+
+Switchable rules have a `RuleMode`: `FAIL`, `ADVISORY`, or `OFF`. Failing
+rules are part of `baseline(...)`, `domainOriented(...)`, and `hexagonal(...)`.
+Advisory rules are returned separately by `baselineAdvisories(...)`,
+`domainOrientedAdvisories(...)`, and `hexagonalAdvisories(...)`. Each rule
+accepts exceptions as exact fully qualified class names or package patterns
+(see [ADR 0005](docs/adr/0005-switchable-rule-modes.md)):
+
+```java
+HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
+    .setterMode(RuleMode.FAIL)
+    .setterExceptions("{base}.config.LegacyProperties", "{base}.legacy..")
+    .staticFieldMode(RuleMode.ADVISORY)
+    .defaultMethodMode(RuleMode.OFF)
+    .build();
+```
 
 ## Use in tests
 
@@ -419,7 +481,10 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Test;
 
+import com.tngtech.archunit.lang.EvaluationResult;
+
 import static io.github.psm8.archunit.HexagonalArchitectureRules.hexagonal;
+import static io.github.psm8.archunit.HexagonalArchitectureRules.hexagonalAdvisories;
 
 class ArchitectureTest {
     private static final String BASE_PACKAGE = "com.acme.orders";
@@ -430,8 +495,18 @@ class ArchitectureTest {
     void hexagonal_architecture_holds() {
         hexagonal(BASE_PACKAGE).check(CLASSES);
     }
+
+    @Test
+    void report_architecture_advisories() {
+        EvaluationResult advisories = hexagonalAdvisories(BASE_PACKAGE).evaluate(CLASSES);
+        advisories.getFailureReport().getDetails().forEach(System.out::println);
+    }
 }
 ```
+
+To tolerate existing violations in tests, wrap a rule in ArchUnit's
+`FreezingArchRule.freeze(hexagonal(BASE_PACKAGE))` and commit the configured
+violation store. ps-archunit adds no freezing API of its own.
 
 Run in GitLab CI with the project's normal Maven test command:
 
@@ -459,8 +534,8 @@ The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
 metadata. Release profile `release` signs every artifact with GPG and publishes
 through the Sonatype Central Portal.
 
-The current release is `0.2.1`. Publish it by creating a GitHub Release with
-tag `v0.2.1`. The publishing workflow requires these repository secrets:
+The current release is `0.3.0`. Publish it by creating a GitHub Release with
+tag `v0.3.0`. The publishing workflow requires these repository secrets:
 
 - `MAVEN_CENTRAL_USERNAME`: Central Portal user-token username;
 - `MAVEN_CENTRAL_TOKEN`: Central Portal user-token password;

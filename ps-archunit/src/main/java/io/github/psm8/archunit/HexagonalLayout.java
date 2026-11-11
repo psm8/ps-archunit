@@ -159,6 +159,30 @@ public final class HexagonalLayout {
 		return domainOriented.outputSuffix();
 	}
 
+	public RuleMode setterMode() {
+		return domainOriented.setterMode();
+	}
+
+	public List<String> setterExceptions() {
+		return domainOriented.setterExceptions();
+	}
+
+	public RuleMode staticFieldMode() {
+		return domainOriented.staticFieldMode();
+	}
+
+	public List<String> staticFieldExceptions() {
+		return domainOriented.staticFieldExceptions();
+	}
+
+	public RuleMode defaultMethodMode() {
+		return domainOriented.defaultMethodMode();
+	}
+
+	public List<String> defaultMethodExceptions() {
+		return domainOriented.defaultMethodExceptions();
+	}
+
 	public String transactionAnnotation() {
 		return domainOriented.transactionAnnotation();
 	}
@@ -315,6 +339,36 @@ public final class HexagonalLayout {
 
 		public Builder outputSuffix(String value) {
 			domainOriented.outputSuffix(value);
+			return this;
+		}
+
+		public Builder setterMode(RuleMode value) {
+			domainOriented.setterMode(value);
+			return this;
+		}
+
+		public Builder setterExceptions(String... values) {
+			domainOriented.setterExceptions(values);
+			return this;
+		}
+
+		public Builder staticFieldMode(RuleMode value) {
+			domainOriented.staticFieldMode(value);
+			return this;
+		}
+
+		public Builder staticFieldExceptions(String... values) {
+			domainOriented.staticFieldExceptions(values);
+			return this;
+		}
+
+		public Builder defaultMethodMode(RuleMode value) {
+			domainOriented.defaultMethodMode(value);
+			return this;
+		}
+
+		public Builder defaultMethodExceptions(String... values) {
+			domainOriented.defaultMethodExceptions(values);
 			return this;
 		}
 

@@ -12,6 +12,8 @@ record CliArguments(
 		Path classpathFile,
 		ReportFormat format,
 		Path output,
+		Path freezeStore,
+		boolean refreeze,
 		boolean versionRequested) {
 	static CliArguments parse(String[] arguments) {
 		List<Path> classes = new ArrayList<>();
@@ -19,6 +21,8 @@ record CliArguments(
 		Path config = null;
 		Path classpathFile = null;
 		Path output = null;
+		Path freezeStore = null;
+		boolean refreeze = false;
 		ReportFormat format = ReportFormat.TEXT;
 		boolean version = false;
 
@@ -26,6 +30,10 @@ record CliArguments(
 			String argument = arguments[index];
 			if (argument.equals("--version")) {
 				version = true;
+				continue;
+			}
+			if (argument.equals("--refreeze")) {
+				refreeze = true;
 				continue;
 			}
 			String option = optionName(argument);
@@ -40,21 +48,25 @@ record CliArguments(
 				case "--classpath-file" -> classpathFile = path(value, option);
 				case "--format" -> format = ReportFormat.parse(value);
 				case "--output" -> output = path(value, option);
+				case "--freeze-store" -> freezeStore = path(value, option);
 				default -> throw new ConfigurationException("unknown option: " + argument);
 			}
 		}
 		if (!version && config == null) {
 			throw new ConfigurationException("--config is required");
 		}
+		if (refreeze && freezeStore == null) {
+			throw new ConfigurationException("--refreeze requires --freeze-store");
+		}
 		if (version) {
 			return new CliArguments(config, List.copyOf(classes), List.copyOf(classpath),
-					classpathFile, format, output, true);
+					classpathFile, format, output, freezeStore, refreeze, true);
 		}
 		if (classes.isEmpty()) {
 			classes.addAll(defaultClassInputs());
 		}
 		return new CliArguments(config, List.copyOf(classes), List.copyOf(classpath),
-				classpathFile, format, output, false);
+				classpathFile, format, output, freezeStore, refreeze, false);
 	}
 
 	private static String optionName(String argument) {

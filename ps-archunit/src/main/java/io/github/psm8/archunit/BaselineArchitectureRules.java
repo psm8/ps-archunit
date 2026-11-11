@@ -29,9 +29,32 @@ public final class BaselineArchitectureRules {
 						dependencyBans(layout),
 						configurationRules(layout),
 						beanRules(layout),
-						outputShape(layout)))
+						outputShape(layout),
+						switchableRules(layout, RuleMode.FAIL)))
 				.as("the baseline architecture under " + layout.basePackage())
 				.because("baseline rules protect technical boundaries and package cycles");
+	}
+
+	public static ArchRule baselineAdvisories(String basePackage) {
+		return baselineAdvisories(BaselineLayout.of(basePackage));
+	}
+
+	/**
+	 * Returns the switchable baseline rules configured in advisory mode. Their
+	 * findings are architecture advisories and never part of {@link #baseline}.
+	 */
+	public static ArchRule baselineAdvisories(BaselineLayout layout) {
+		ArchitectureRuleSupport.requireLayout(layout);
+		return switchableRules(layout, RuleMode.ADVISORY)
+				.as("the baseline architecture advisories under " + layout.basePackage());
+	}
+
+	static ArchRule switchableRules(BaselineLayout layout, RuleMode mode) {
+		return ArchitectureRuleSupport.combine(List.of(
+				SwitchableRuleSupport.select(layout.setterMode(), mode,
+						() -> SwitchableRuleSupport.setterRule(layout)),
+				SwitchableRuleSupport.select(layout.staticFieldMode(), mode,
+						() -> SwitchableRuleSupport.staticFieldRule(layout))));
 	}
 
 	private static ArchRule cycleRules(BaselineLayout layout) {

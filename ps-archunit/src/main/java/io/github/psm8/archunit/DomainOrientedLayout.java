@@ -18,6 +18,8 @@ public final class DomainOrientedLayout {
 	private final List<BaselineLayout.PatternPair> dependencyDirectionIgnores;
 	private final String transactionAnnotation;
 	private final List<String> transactionPackages;
+	private final RuleMode defaultMethodMode;
+	private final List<String> defaultMethodExceptions;
 
 	private DomainOrientedLayout(Builder builder) {
 		validateTransactionConfiguration(builder);
@@ -31,6 +33,9 @@ public final class DomainOrientedLayout {
 		dependencyDirectionIgnores = resolvePatternPairs(builder.dependencyDirectionIgnores, basePackage());
 		transactionAnnotation = builder.transactionAnnotation;
 		transactionPackages = LayoutSupport.resolvePatterns(builder.transactionPackages, basePackage());
+		defaultMethodMode = builder.defaultMethodMode;
+		defaultMethodExceptions = LayoutSupport.resolvePatterns(
+				builder.defaultMethodExceptions, basePackage());
 	}
 
 	public static Builder builder(String basePackage) {
@@ -70,6 +75,8 @@ public final class DomainOrientedLayout {
 		copy.apiConfigured = true;
 		copy.infrastructureConfigured = true;
 		copy.domainModelFrameworkConfigured = true;
+		copy.defaultMethodMode(defaultMethodMode)
+				.defaultMethodExceptions(defaultMethodExceptions.toArray(String[]::new));
 		if (transactionAnnotation != null) {
 			copy.transactionAnnotation(transactionAnnotation);
 		}
@@ -123,6 +130,30 @@ public final class DomainOrientedLayout {
 		return baseline.outputSuffix();
 	}
 
+	public RuleMode setterMode() {
+		return baseline.setterMode();
+	}
+
+	public List<String> setterExceptions() {
+		return baseline.setterExceptions();
+	}
+
+	public RuleMode staticFieldMode() {
+		return baseline.staticFieldMode();
+	}
+
+	public List<String> staticFieldExceptions() {
+		return baseline.staticFieldExceptions();
+	}
+
+	public RuleMode defaultMethodMode() {
+		return defaultMethodMode;
+	}
+
+	public List<String> defaultMethodExceptions() {
+		return defaultMethodExceptions;
+	}
+
 	public List<String> domain() {
 		return domain;
 	}
@@ -171,6 +202,8 @@ public final class DomainOrientedLayout {
 				new ArrayList<>();
 		private final List<String> transactionPackages = new ArrayList<>();
 		private String transactionAnnotation;
+		private RuleMode defaultMethodMode = RuleMode.FAIL;
+		private final List<String> defaultMethodExceptions = new ArrayList<>();
 		private boolean domainConfigured;
 		private boolean applicationConfigured;
 		private boolean apiConfigured;
@@ -240,6 +273,36 @@ public final class DomainOrientedLayout {
 
 		public Builder outputSuffix(String value) {
 			baseline.outputSuffix(value);
+			return this;
+		}
+
+		public Builder setterMode(RuleMode value) {
+			baseline.setterMode(value);
+			return this;
+		}
+
+		public Builder setterExceptions(String... values) {
+			baseline.setterExceptions(values);
+			return this;
+		}
+
+		public Builder staticFieldMode(RuleMode value) {
+			baseline.staticFieldMode(value);
+			return this;
+		}
+
+		public Builder staticFieldExceptions(String... values) {
+			baseline.staticFieldExceptions(values);
+			return this;
+		}
+
+		public Builder defaultMethodMode(RuleMode value) {
+			defaultMethodMode = Objects.requireNonNull(value, "defaultMethodMode");
+			return this;
+		}
+
+		public Builder defaultMethodExceptions(String... values) {
+			LayoutSupport.replacePatterns(defaultMethodExceptions, values);
 			return this;
 		}
 

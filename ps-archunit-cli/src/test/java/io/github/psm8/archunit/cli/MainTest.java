@@ -6,8 +6,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MainTest {
@@ -22,7 +25,7 @@ class MainTest {
 
 		assertEquals(0, exitCode);
 		assertTrue(output.toString().contains("unknown")
-				|| output.toString().contains("0.2.1"));
+				|| output.toString().contains("0.3.0"));
 	}
 
 	@Test
@@ -60,7 +63,7 @@ class MainTest {
 			assertEquals(
 					"{\"version\":\"unknown\",\"tier\":\"baseline\",\"input\":[\""
 							+ classes.toString().replace("\\", "\\\\")
-							+ "\"],\"pass\":true,\"violations\":[]}\n",
+							+ "\"],\"pass\":true,\"violations\":[],\"advisories\":[]}\n",
 					output.toString());
 		} finally {
 			Files.deleteIfExists(config);
@@ -106,5 +109,84 @@ class MainTest {
 		} finally {
 			Files.deleteIfExists(config);
 		}
+	}
+
+	@Test
+	void advisories_are_reported_without_failing_the_run() throws Exception {
+		String basePackage = "io.github.psm8.archunit.fixtures.switchable.setter.named";
+		Result result = run(basePackage, fixture("switchable", "setter", "named"));
+
+		assertEquals(0, result.exitCode());
+		assertTrue(result.stdout().contains("\"pass\":true,\"violations\":[],\"advisories\":["));
+		assertTrue(result.stdout().contains("Account.setName(java.lang.String) is a setter"));
+	}
+
+	@Test
+	void missing_freeze_store_fails_and_points_to_refreeze() throws Exception {
+		Path store = Files.createTempDirectory("ps-archunit-store-").resolve("missing");
+		Result result = run(
+				"io.github.psm8.archunit.fixtures.switchable.staticfield.invalid",
+				fixture("switchable", "staticfield", "invalid"),
+				"--freeze-store", store.toString());
+
+		assertEquals(2, result.exitCode());
+		assertTrue(result.stderr().contains("--refreeze"));
+		assertFalse(Files.exists(store));
+	}
+
+	@Test
+	void refreeze_records_violations_and_later_runs_tolerate_them() throws Exception {
+		String basePackage = "io.github.psm8.archunit.fixtures.switchable.staticfield.invalid";
+		Path classes = fixture("switchable", "staticfield", "invalid");
+		Path store = Files.createTempDirectory("ps-archunit-store-").resolve("store");
+
+		Result unfrozen = run(basePackage, classes);
+		Result recorded = run(basePackage, classes,
+				"--freeze-store", store.toString(), "--refreeze");
+		Result frozen = run(basePackage, classes, "--freeze-store", store.toString());
+
+		assertEquals(1, unfrozen.exitCode());
+		assertEquals(0, recorded.exitCode());
+		assertTrue(Files.isDirectory(store));
+		assertEquals(0, frozen.exitCode());
+		assertTrue(frozen.stdout().contains("\"pass\":true"));
+	}
+
+	private static Path fixture(String... segments) {
+		Path path = Path.of("..", "ps-archunit", "target", "test-classes",
+				"io", "github", "psm8", "archunit", "fixtures");
+		for (String segment : segments) {
+			path = path.resolve(segment);
+		}
+		return path;
+	}
+
+	private static Result run(String basePackage, Path classes, String... extraArguments)
+			throws Exception {
+		Path config = Files.createTempFile("ps-archunit-cli-", ".yml");
+		try {
+			Files.writeString(config, """
+					schemaVersion: 1
+					tier: baseline
+					basePackage: %s
+					""".formatted(basePackage));
+			List<String> arguments = new ArrayList<>(List.of(
+					"--config", config.toString(),
+					"--classes", classes.toString(),
+					"--format", "json"));
+			arguments.addAll(List.of(extraArguments));
+			ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+			ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+			int exitCode = Main.run(
+					arguments.toArray(String[]::new),
+					new PrintStream(stdout),
+					new PrintStream(stderr));
+			return new Result(exitCode, stdout.toString(), stderr.toString());
+		} finally {
+			Files.deleteIfExists(config);
+		}
+	}
+
+	private record Result(int exitCode, String stdout, String stderr) {
 	}
 }
