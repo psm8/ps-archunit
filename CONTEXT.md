@@ -214,7 +214,7 @@ violations are new.
 **Classification completeness**:
 The Level 2 and Level 3 requirement that every imported class under
 `basePackage..` belongs to at least one configured domain, application/core,
-API, or infrastructure group. Level 1 is permissive. Empty groups remain
+API, infrastructure, or shared library group. Level 1 is permissive. Empty groups remain
 no-ops, overlapping groups are allowed, and classes outside the base package
 are not classified.
 
@@ -252,9 +252,9 @@ null, blank, simple, wildcard, and package-pattern values. It does not inspect
 method bodies or infer port/use-case semantics.
 
 **Domain-oriented**:
-The cumulative Level 2 rule tier. It adds domain, application, API, and
-infrastructure dependency direction and allows only configured model annotations
-in domain classes.
+The cumulative Level 2 rule tier. It adds domain, application, API,
+infrastructure, and shared library dependency direction and allows only
+configured model annotations in domain classes.
 
 **Hexagonal**:
 The cumulative Level 3 rule tier. It adds onion direction, framework
@@ -283,6 +283,18 @@ the declared infrastructure group plus outbound and mixed adapter groups as an
 internal effective group. Every class in the effective group is also a
 classification match for Level 2/3 completeness.
 
+**Shared library package group**:
+Technical code shared by the code outside the core: API and inbound adapters,
+infrastructure and outbound or mixed adapters, and composition roots. It
+connects no external mechanism, so it is not an adapter. Domain, application,
+and port code may not depend on it. It is a leaf: it depends only on itself
+and on code outside the base package. Being outside the core, it may use
+frameworks. By default it includes `basePackage.lib..` and
+`basePackage.*.lib..` from Level 2. Every class in it is a classification
+match for Level 2/3 completeness.
+_Avoid_: Using it as a catch-all for code that fits no other group; putting
+business concepts shared by features in it; calling it `common` or `utils`.
+
 **Model-framework package group**:
 Configured namespaces whose annotation types may be used as domain model
 metadata. Allowing a namespace does not allow runtime or service types from
@@ -307,8 +319,8 @@ concepts.
 
 **Domain-oriented layout**:
 The cumulative configuration vocabulary for Levels 1–2. It copies the
-baseline snapshot and adds domain, application, API, infrastructure, and
-model-framework package groups, dependency-direction exceptions, and framework
+baseline snapshot and adds domain, application, API, infrastructure, shared
+library, and model-framework package groups, dependency-direction exceptions, and framework
 namespace policy.
 
 **Hexagonal layout**:
