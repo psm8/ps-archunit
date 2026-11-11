@@ -177,20 +177,23 @@ final class SwitchableRuleSupport {
 				|| writesOwnField(method, method.getName());
 	}
 
-	// JDK types are not imported when missing dependencies are not resolved,
-	// but they are always loadable, so they are inspected by reflection.
+	// JDK types are not imported when missing dependencies are not resolved, so
+	// they are inspected by reflection; a type that cannot be reflected is
+	// treated as uninspectable.
 	private static boolean isJdkType(JavaClass type) {
 		return type.getName().startsWith("java.");
 	}
 
 	private static boolean jdkTypeDeclares(JavaClass type, JavaMethod method) {
-		Class<?> reflected;
 		try {
-			reflected = type.reflect();
+			return reflectedHierarchyDeclares(type.reflect(), method);
 		} catch (RuntimeException | LinkageError unavailable) {
 			return true;
 		}
-		Deque<Class<?>> pending = new ArrayDeque<>(List.of(reflected));
+	}
+
+	private static boolean reflectedHierarchyDeclares(Class<?> type, JavaMethod method) {
+		Deque<Class<?>> pending = new ArrayDeque<>(List.of(type));
 		Set<Class<?>> visited = new HashSet<>();
 		while (!pending.isEmpty()) {
 			Class<?> current = pending.pop();
