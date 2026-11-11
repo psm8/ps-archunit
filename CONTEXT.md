@@ -185,7 +185,8 @@ level.
 
 **Rule exception**:
 An exact fully qualified class name or a package pattern that exempts matching
-classes from one switchable rule. It does not exempt them from any other rule.
+classes from one switchable rule. A nested class is named by its binary name,
+such as `Order$OrderBuilder`. It does not exempt them from any other rule.
 
 **Mutable state rules**:
 Two Baseline rules over every class under `basePackage..`: no non-private
@@ -202,8 +203,8 @@ _Avoid_: Calling builder methods setters. A setter mutates the object itself;
 a builder is a construction API.
 
 **Builder type**:
-A class with a `build()` method that returns another type and at least one
-fluent method that returns the class itself.
+A class or interface with a `build()` method that returns another object type
+and at least one fluent method that returns the type itself.
 _Avoid_: Recognising builders by Lombok's `@Builder`, which is not present in
 compiled classes.
 
@@ -220,8 +221,8 @@ invariants is still an over-flexible construction API.
 **Bean creation rule**:
 A Baseline rule that requires beans to be created explicitly, by `@Bean`
 methods or `@Import`, instead of being found by component scanning. It reports
-classes directly annotated with `@Component`, `@Service`, `@ComponentScan`,
-or `@SpringBootApplication`, each with the change that fixes it. Annotations
+classes directly annotated with `@Component`, `@Service`, `@ComponentScan`
+(or `@ComponentScans`), or `@SpringBootApplication`, each with the change that fixes it. Annotations
 that only build on `@Component`, such as `@Configuration`, `@RestController`,
 `@Repository`, or a system's own stereotype, are not reported. Its default
 mode is off at Level 1, advisory at Level 2, and fail at Level 3.

@@ -23,6 +23,7 @@ class BeanCreationAndBuilderRulesTest {
 	private static final String GENERATED_BUILDER = FIXTURES + ".builder.generated";
 	private static final String SHAPED_BUILDER = FIXTURES + ".builder.shaped";
 	private static final String NAMED_BUILDER = FIXTURES + ".builder.named";
+	private static final String VOID_BUILD = FIXTURES + ".builder.voidbuild";
 
 	@Test
 	void bean_creation_default_rises_with_the_level() {
@@ -44,6 +45,11 @@ class BeanCreationAndBuilderRulesTest {
 		assertEquals(
 				RuleMode.ADVISORY,
 				HexagonalLayout.of(baseline).toBuilder().build().beanCreationMode());
+		DomainOrientedLayout configured = DomainOrientedLayout.builder("com.acme")
+				.beanCreationMode(RuleMode.OFF)
+				.build();
+		assertEquals(RuleMode.OFF, configured.toBuilder().build().beanCreationMode());
+		assertEquals(RuleMode.OFF, HexagonalLayout.of(configured).beanCreationMode());
 	}
 
 	@Test
@@ -66,6 +72,8 @@ class BeanCreationAndBuilderRulesTest {
 				+ " register it with a @Bean method in a @Configuration class"), message);
 		assertTrue(message.contains(SCANNED + ".app.ScanningConfiguration enables component"
 				+ " scanning; register beans with @Bean methods or @Import"), message);
+		assertTrue(message.contains(SCANNED + ".app.RepeatedScanConfiguration enables component"
+				+ " scanning"), message);
 		assertTrue(message.contains(SCANNED + ".app.OrdersApplication enables component scanning"
 				+ " through @SpringBootApplication; use @SpringBootConfiguration with"
 				+ " @EnableAutoConfiguration"), message);
@@ -131,6 +139,14 @@ class BeanCreationAndBuilderRulesTest {
 				message);
 		assertTrue(message.contains("ResponseBuilder.setPrefix(java.lang.String) is a setter"),
 				message);
+	}
+
+	@Test
+	void a_build_method_without_a_result_does_not_make_a_builder() {
+		String message = failure(baselineAdvisories(VOID_BUILD), VOID_BUILD);
+
+		assertFalse(message.contains("is a builder"), message);
+		assertTrue(message.contains("Workflow.step(java.lang.String) is a fluent setter"), message);
 	}
 
 	@Test

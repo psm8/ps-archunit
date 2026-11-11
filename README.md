@@ -452,7 +452,9 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
   reported with the change that fixes them. Annotations that only build on
   `@Component`, such as `@Configuration`, `@RestController`, `@Repository`, or
   your own stereotypes, are not reported (see
-  [ADR 0008](docs/adr/0008-bean-creation-rule.md)).
+  [ADR 0008](docs/adr/0008-bean-creation-rule.md)). The CLI also reads
+  `target/test-classes`; exempt test applications with
+  `beanCreationExceptions`.
 
 ### Level 2: `domainOriented`
 
@@ -510,7 +512,8 @@ rules are part of `baseline(...)`, `domainOriented(...)`, and `hexagonal(...)`.
 Advisory rules are returned separately by `baselineAdvisories(...)`,
 `domainOrientedAdvisories(...)`, and `hexagonalAdvisories(...)`. Each rule
 accepts exceptions as exact fully qualified class names or package patterns
-(see [ADR 0005](docs/adr/0005-switchable-rule-modes.md)):
+(see [ADR 0005](docs/adr/0005-switchable-rule-modes.md)). A nested class uses
+its binary name, such as `{base}.model.Order$OrderBuilder`:
 
 ```java
 HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")

@@ -24,7 +24,8 @@ with:
 
 - `@Component` or `@Service`: register the class with a `@Bean` method in a
   `@Configuration` class;
-- `@ComponentScan`: register beans with `@Bean` methods or `@Import`;
+- `@ComponentScan` or `@ComponentScans`: register beans with `@Bean` methods
+  or `@Import`;
 - `@SpringBootApplication`: use `@SpringBootConfiguration` with
   `@EnableAutoConfiguration`.
 

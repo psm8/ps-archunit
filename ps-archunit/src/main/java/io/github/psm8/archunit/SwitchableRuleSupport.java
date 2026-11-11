@@ -36,6 +36,8 @@ final class SwitchableRuleSupport {
 	private static final String SERVICE = "org.springframework.stereotype.Service";
 	private static final String COMPONENT_SCAN =
 			"org.springframework.context.annotation.ComponentScan";
+	private static final String COMPONENT_SCANS =
+			"org.springframework.context.annotation.ComponentScans";
 
 	private SwitchableRuleSupport() {
 	}
@@ -248,12 +250,13 @@ final class SwitchableRuleSupport {
 			@Override
 			public void check(JavaClass item, ConditionEvents events) {
 				String name = item.getName();
-				if (item.isAnnotatedWith(COMPONENT) || item.isAnnotatedWith(SERVICE)) {
-					String annotation = item.isAnnotatedWith(SERVICE) ? "@Service" : "@Component";
+				String stereotype = item.isAnnotatedWith(SERVICE) ? "@Service"
+						: item.isAnnotatedWith(COMPONENT) ? "@Component" : null;
+				if (stereotype != null) {
 					events.add(SimpleConditionEvent.violated(item, name + " is annotated with "
-							+ annotation + "; register it with a @Bean method in a @Configuration class"));
+							+ stereotype + "; register it with a @Bean method in a @Configuration class"));
 				}
-				if (item.isAnnotatedWith(COMPONENT_SCAN)) {
+				if (item.isAnnotatedWith(COMPONENT_SCAN) || item.isAnnotatedWith(COMPONENT_SCANS)) {
 					events.add(SimpleConditionEvent.violated(item, name
 							+ " enables component scanning; register beans with @Bean methods or @Import"));
 				}
@@ -299,6 +302,7 @@ final class SwitchableRuleSupport {
 			boolean returnsItself = method.getRawReturnType().equals(type);
 			if (method.getName().equals("build")
 					&& method.getRawParameterTypes().isEmpty()
+					&& !method.getRawReturnType().isPrimitive()
 					&& !returnsItself) {
 				builds = true;
 			} else if (returnsItself) {
