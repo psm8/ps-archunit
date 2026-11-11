@@ -149,6 +149,19 @@ class SwitchableRulesTest {
 	}
 
 	@Test
+	void inherited_jdk_methods_are_recognized_when_missing_dependencies_are_not_resolved() {
+		String basePackage = FIXTURES + ".setter.jdk";
+		ArchConfiguration.withThreadLocalScope(configuration -> {
+			configuration.setResolveMissingDependenciesFromClassPath(false);
+
+			String message = failureOf(baselineAdvisories(basePackage), basePackage);
+
+			assertTrue(message.contains("LogHandler.setOwn(java.lang.String) is a setter"));
+			assertFalse(message.contains("setFormatter"));
+		});
+	}
+
+	@Test
 	void setter_exceptions_accept_exact_class_names_and_package_patterns() {
 		BaselineLayout byClass = BaselineLayout.builder(NAMED_SETTER)
 				.setterMode(RuleMode.FAIL)

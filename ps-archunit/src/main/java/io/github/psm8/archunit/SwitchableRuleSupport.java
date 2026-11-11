@@ -14,7 +14,10 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -181,14 +184,32 @@ final class SwitchableRuleSupport {
 	}
 
 	private static boolean jdkTypeDeclares(JavaClass type, JavaMethod method) {
-		for (Method candidate : type.reflect().getDeclaredMethods()) {
-			int modifiers = candidate.getModifiers();
-			if (!Modifier.isPrivate(modifiers)
-					&& !Modifier.isStatic(modifiers)
-					&& candidate.getName().equals(method.getName())
-					&& candidate.getParameterCount() == method.getRawParameterTypes().size()) {
-				return true;
+		Class<?> reflected;
+		try {
+			reflected = type.reflect();
+		} catch (RuntimeException | LinkageError unavailable) {
+			return true;
+		}
+		Deque<Class<?>> pending = new ArrayDeque<>(List.of(reflected));
+		Set<Class<?>> visited = new HashSet<>();
+		while (!pending.isEmpty()) {
+			Class<?> current = pending.pop();
+			if (!visited.add(current)) {
+				continue;
 			}
+			for (Method candidate : current.getDeclaredMethods()) {
+				int modifiers = candidate.getModifiers();
+				if ((Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers))
+						&& !Modifier.isStatic(modifiers)
+						&& candidate.getName().equals(method.getName())
+						&& candidate.getParameterCount() == method.getRawParameterTypes().size()) {
+					return true;
+				}
+			}
+			if (current.getSuperclass() != null) {
+				pending.push(current.getSuperclass());
+			}
+			pending.addAll(List.of(current.getInterfaces()));
 		}
 		return false;
 	}

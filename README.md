@@ -409,9 +409,11 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
   `@Accessors(fluent = true)`). An override is allowed when the overridden
   method is itself reported (a `set…` method or a concrete fluent setter of a
   supertype in the base package), belongs to a supertype outside the base
-  package, or belongs to a supertype whose bytecode is not part of the run
-  (such as a framework interface declaring `setValue`), so no dependency
-  classpath is needed. An abstract fluent method in the base package is not
+  package. When a supertype's bytecode is not part of the run (such as a
+  framework interface declaring `setValue`), every setter of that class is
+  treated as a possible override and skipped; JDK supertypes are always
+  inspected. Pass dependencies with `--classpath` or `--classpath-file` for a
+  precise result. An abstract fluent method in the base package is not
   reported, so its implementations are. Supertypes excluded by
   `setterExceptions`, or not imported in a JUnit test, hide the setters that
   override them. Builders that assign fields fluently are reported too.

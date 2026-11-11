@@ -192,9 +192,9 @@ overrides of a reported supertype setter or of a method the system does not
 own; and no static
 non-final fields. Setters run in advisory mode by default; static non-final
 fields fail by default. A setter declared by a supertype in the base package
-is reported once, at its declaration; a supertype outside the base package or
-one that could not be inspected owns the contract, so its overrides are
-exempt.
+is reported once, at its declaration; overrides of a supertype outside the
+base package are exempt. A class with a non-JDK supertype that could not be
+inspected has all its setters treated as possible overrides.
 _Avoid_: Exempting builders by name; a builder whose `build()` enforces no
 invariants is a setter surface like any other.
 
