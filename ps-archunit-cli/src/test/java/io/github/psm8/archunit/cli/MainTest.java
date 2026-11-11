@@ -184,6 +184,41 @@ class MainTest {
 	}
 
 	@Test
+	void unresolvable_supertypes_of_checked_interfaces_fail_with_a_classpath_hint()
+			throws Exception {
+		Path sources = Files.createTempDirectory("ps-archunit-sources-");
+		Path classes = Files.createTempDirectory("ps-archunit-classes-");
+		Path base = sources.resolve("org/lib/Base.java");
+		Path pricing = sources.resolve("com/acme/linkage/domain/Pricing.java");
+		Files.createDirectories(base.getParent());
+		Files.createDirectories(pricing.getParent());
+		Files.writeString(base, """
+				package org.lib;
+
+				public interface Base {
+				}
+				""");
+		Files.writeString(pricing, """
+				package com.acme.linkage.domain;
+
+				public interface Pricing extends org.lib.Base {
+					default long doubled() {
+						return 2;
+					}
+				}
+				""");
+		int compiled = ToolProvider.getSystemJavaCompiler().run(
+				null, null, null, "-d", classes.toString(), base.toString(), pricing.toString());
+		assertEquals(0, compiled);
+		Files.delete(classes.resolve("org/lib/Base.class"));
+
+		Result result = run("domainOriented", "com.acme.linkage", classes);
+
+		assertEquals(2, result.exitCode());
+		assertTrue(result.stderr().contains("--classpath"), result.stderr());
+	}
+
+	@Test
 	void freeze_store_without_an_entry_for_the_rule_fails_instead_of_recording() throws Exception {
 		Path classes = fixture("switchable", "staticfield", "invalid");
 		Path store = Files.createTempDirectory("ps-archunit-store-").resolve("store");

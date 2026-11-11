@@ -19,9 +19,12 @@ recreated silently; re-recording requires an explicit `--refreeze`.
 JUnit consumers wrap the library's rules in `FreezingArchRule` themselves. The
 README documents how; the library adds no freezing API.
 
-Violation message text is a compatibility contract. Changing the wording of a
-violation message is a breaking change and must be called out in the release
-notes.
+Violation message text and the tier rule descriptions (the `as(...)` and
+`because(...)` text of `baseline`, `domainOriented`, and `hexagonal`) are a
+compatibility contract. The store is keyed by rule description, so changing it
+makes every consumer store fail; changing a violation message makes frozen
+violations look new. Both are breaking changes and must be called out in the
+release notes.
 
 ## Consequences
 

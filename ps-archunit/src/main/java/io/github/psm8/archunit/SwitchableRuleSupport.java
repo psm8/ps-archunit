@@ -134,6 +134,8 @@ final class SwitchableRuleSupport {
 				.filter(type -> !ArchitectureRuleSupport.isInBasePackage(
 						type.getPackageName(), basePackage))
 				.flatMap(type -> type.getMethods().stream())
+				.filter(candidate -> !candidate.getModifiers().contains(JavaModifier.PRIVATE)
+						&& !candidate.getModifiers().contains(JavaModifier.STATIC))
 				.anyMatch(candidate -> candidate.getName().equals(method.getName())
 						&& candidate.getRawParameterTypes().size() == arity);
 	}
