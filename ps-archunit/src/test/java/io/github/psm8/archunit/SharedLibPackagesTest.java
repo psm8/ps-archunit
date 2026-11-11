@@ -88,19 +88,56 @@ class SharedLibPackagesTest {
 				+ CORE_USE + ".lib.RequestTag.of"), message);
 		assertTrue(message.contains("<" + CORE_USE + ".application.service.ItemService.tag()>"
 				+ " calls method <" + CORE_USE + ".lib.RequestTag.of"), message);
-		assertThrows(AssertionError.class,
-				() -> domainOriented(CORE_USE).check(imported(CORE_USE)));
+		assertTrue(message.contains(portUsesSharedLib()), message);
+	}
+
+	@Test
+	void domain_oriented_rejects_application_and_port_dependencies_on_shared_lib() {
+		String message = failure(domainOriented(CORE_USE), CORE_USE);
+
+		assertTrue(message.contains("<" + CORE_USE + ".application.service.ItemService.tag()>"
+				+ " calls method <" + CORE_USE + ".lib.RequestTag.of"), message);
+		assertTrue(message.contains(portUsesSharedLib()), message);
 	}
 
 	@Test
 	void shared_lib_depends_on_nothing_else_in_the_base_package() {
 		String message = failure(hexagonal(NOT_LEAF), NOT_LEAF);
 
-		assertTrue(message.contains("ItemFormatter.format(" + NOT_LEAF + ".domain.model.Item, "
-				+ NOT_LEAF + ".adapter.in.ItemView)> calls method <" + NOT_LEAF
-				+ ".domain.model.Item.id()>"), message);
+		assertTrue(message.contains(formatterCallsItem()), message);
 		assertTrue(message.contains("calls method <" + NOT_LEAF + ".adapter.in.ItemView.render()>"),
 				message);
+	}
+
+	@Test
+	void domain_oriented_keeps_shared_lib_a_leaf() {
+		DomainOrientedLayout layout = DomainOrientedLayout.builder(NOT_LEAF)
+				.apiPackages("{base}.adapter.in..")
+				.build();
+
+		String message = failure(domainOriented(layout), NOT_LEAF);
+
+		assertTrue(message.contains(formatterCallsItem()), message);
+	}
+
+	@Test
+	void dependency_direction_ignores_apply_to_shared_lib() {
+		HexagonalLayout layout = HexagonalLayout.builder(NOT_LEAF)
+				.ignoreDependency("{base}.lib.ItemFormatter", "{base}.domain.model.Item")
+				.ignoreDependency("{base}.lib.ItemFormatter", "{base}.adapter.in.ItemView")
+				.build();
+
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(NOT_LEAF)));
+	}
+
+	private static String portUsesSharedLib() {
+		return "<" + CORE_USE + ".application.port.out.ItemTagPort.tag(" + CORE_USE
+				+ ".lib.RequestTag)> has parameter of type <" + CORE_USE + ".lib.RequestTag>";
+	}
+
+	private static String formatterCallsItem() {
+		return "ItemFormatter.format(" + NOT_LEAF + ".domain.model.Item, " + NOT_LEAF
+				+ ".adapter.in.ItemView)> calls method <" + NOT_LEAF + ".domain.model.Item.id()>";
 	}
 
 	private static String failure(ArchRule rule, String packageName) {

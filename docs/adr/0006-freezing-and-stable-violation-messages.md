@@ -16,10 +16,13 @@ violations are frozen; advisories are never frozen. The consumer commits the
 store to their repository. A missing store fails the run instead of being
 recreated silently; re-recording requires an explicit `--refreeze`.
 
-A rule without an entry in the store has no frozen violations: all of its
-violations are new and fail the run, and the store is not changed. A release
-can therefore add a rule without breaking frozen consumers; they fix the new
-violations or accept them with `--refreeze`. ArchUnit's default, recording the
+The store has one entry per tier rule. Checks that a release adds to a tier
+rule report new violations under the existing entry. A rule without an entry
+(after changing `tier` or `basePackage`, or a rule that a release adds
+separately) has no frozen violations: all of its violations are new and fail
+the run, and the store is not changed. The run does not stop with a
+configuration error; the consumer fixes the new violations or accepts them
+with `--refreeze`. ArchUnit's default, recording the
 current violations of an unknown rule and passing, is not used, because it
 hides the violations of a new rule. Stopping the run until `--refreeze` is not
 used either, because `--refreeze` re-records every rule and would also accept

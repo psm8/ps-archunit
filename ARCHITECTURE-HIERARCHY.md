@@ -32,7 +32,7 @@ The tiers differ in how much package structure they enforce:
 
 - Level 1 remains permissive about architecture categories. It does not reject
   an otherwise valid in-scope class merely because no domain, application, API,
-  or infrastructure selector matches it.
+  infrastructure, or shared library selector matches it.
 - Levels 2 and 3 fail closed. Every imported class under `basePackage..` must
   match at least one configured architecture group. Level 3 classifies inbound
   and outbound ports as application/core, inbound adapters as effective API,
@@ -54,7 +54,12 @@ The default Level 2 groups cover both direct and one-feature vertical layouts:
 {base}.application..         {base}.*.application..
 {base}.api..                 {base}.*.api..
 {base}.infrastructure..      {base}.*.infrastructure..
+{base}.lib..                 {base}.*.lib..
 ```
+
+The `lib` group is the shared library group: technical code that API,
+infrastructure, and adapter code share. The core may not depend on it, and it
+depends on nothing else in the base package.
 
 Level 3 adds the same direct and one-feature variants for inbound and outbound
 ports under `application.port.in` and `application.port.out`, and for

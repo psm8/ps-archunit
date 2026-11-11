@@ -112,10 +112,12 @@ java -jar ps-archunit-cli-0.4.0-all.jar --config architecture.yml \
 ```
 
 A missing store fails the run with exit code `2` instead of being created
-silently. A rule without an entry in the store (a rule added by a new release,
-or after changing `tier` or `basePackage`) has no frozen violations: all of
-its violations are new and fail the run. The store is not changed; record them
-with `--refreeze` when they are accepted.
+silently. The store has one entry per tier rule, keyed by its description, so
+checks that a release adds to a tier rule report new violations under the
+existing entry. A tier rule without an entry (after changing `tier` or
+`basePackage`) has no frozen violations: all of its violations are new and
+fail the run. The store is not changed; record them with `--refreeze` when
+they are accepted.
 Fixed violations drop out of the store automatically. Only violations are
 frozen; advisories are always reported. Frozen entries are matched by
 violation message text, so ps-archunit treats a reworded violation message as
@@ -324,8 +326,8 @@ Each configurable package group has replacement and append semantics. For
 example, domain-oriented API configuration uses `apiPackages(...)` to replace
 the group and `addApiPackages(...)` to append paths.
 The same pattern applies to `infrastructurePackages(...)`,
-`sharedLibPackages(...)`, `domainModelFrameworkPackages(...)`, application groups, adapter groups,
-`domain(...)`, and `outputs(...)`. Builders accepting a lower-tier layout copy
+`sharedLibPackages(...)`, `domainModelFrameworkPackages(...)`, application
+groups, adapter groups, `domain(...)`, and `outputs(...)`. Builders accepting a lower-tier layout copy
 that snapshot; `toBuilder()` starts an independent builder.
 
 Level 3 lower-layer checks use effective groups internally: declared API plus
@@ -341,12 +343,15 @@ and it may use frameworks. It is a leaf: its classes depend only on the group
 itself and on code outside `basePackage..`. A composition root inside it keeps
 its source-local exemption. Configure it with `sharedLibPackages(...)` or the
 `sharedLibPackages` key; see
-[ADR 0007](docs/adr/0007-shared-library-package-group.md).
+[ADR 0007](docs/adr/0007-shared-library-package-group.md). The default
+`basePackage.*.lib..` also matches `lib` packages inside other groups, such as
+`basePackage.domain.lib..`; such a class belongs to both groups and gets both
+sets of rules.
 
 For Level 2 and Level 3, every imported class in `basePackage..` must belong
 to at least one configured domain, application/core, API, infrastructure, or
-shared library group. An empty group remains a no-op when no in-scope class uses it. Level 1
-does not apply this completeness check. Group overlap is allowed, and imported
+shared library group. An empty group remains a no-op when no in-scope class
+uses it. Level 1 does not apply this completeness check. Group overlap is allowed, and imported
 classes outside `basePackage..` are ignored by classification.
 
 Model-framework allowances apply only to annotation types used as metadata on

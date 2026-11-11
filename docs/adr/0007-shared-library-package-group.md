@@ -51,3 +51,10 @@ A consumer with an existing `lib` or `*.lib` package under the base package
 gets the leaf and dependent rules for it after upgrading, which may report new
 violations. The release that introduces the group is a minor release and calls
 this out.
+
+The default `{base}.*.lib..` also matches `lib` packages inside other groups,
+such as `{base}.domain.lib..` or `{base}.infrastructure.lib..`. Groups may
+overlap, so such a class gets the rules of both groups: other domain classes
+may not use a `domain.lib` class, and API code may not use an
+`infrastructure.lib` class. A `lib` package belongs directly under the base
+package or a feature package.

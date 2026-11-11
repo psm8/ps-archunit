@@ -208,14 +208,14 @@ and `@FunctionalInterface` types are exempt. It fails by default.
 An architecture violation recorded in a committed violation store and
 tolerated by later runs until it is fixed. Only violations are frozen, never
 advisories. A missing store fails the run rather than being recreated silently.
-A rule without an entry in the store has no frozen violations, so all of its
-violations are new.
+A tier rule without an entry in the store has no frozen violations, so all of
+its violations are new.
 
 **Classification completeness**:
 The Level 2 and Level 3 requirement that every imported class under
 `basePackage..` belongs to at least one configured domain, application/core,
-API, infrastructure, or shared library group. Level 1 is permissive. Empty groups remain
-no-ops, overlapping groups are allowed, and classes outside the base package
+API, infrastructure, or shared library group. Level 1 is permissive. Empty
+groups remain no-ops, overlapping groups are allowed, and classes outside the base package
 are not classified.
 
 **Baseline**:
@@ -293,7 +293,9 @@ frameworks. By default it includes `basePackage.lib..` and
 `basePackage.*.lib..` from Level 2. Every class in it is a classification
 match for Level 2/3 completeness.
 _Avoid_: Using it as a catch-all for code that fits no other group; putting
-business concepts shared by features in it; calling it `common` or `utils`.
+business concepts shared by features in it; calling it `common` or `utils`;
+`lib` packages inside the core, such as `basePackage.domain.lib..`, which
+belong to both groups.
 
 **Model-framework package group**:
 Configured namespaces whose annotation types may be used as domain model
@@ -320,8 +322,8 @@ concepts.
 **Domain-oriented layout**:
 The cumulative configuration vocabulary for Levels 1–2. It copies the
 baseline snapshot and adds domain, application, API, infrastructure, shared
-library, and model-framework package groups, dependency-direction exceptions, and framework
-namespace policy.
+library, and model-framework package groups, dependency-direction exceptions,
+and framework namespace policy.
 
 **Hexagonal layout**:
 The cumulative configuration vocabulary for Levels 1–3. It copies the
