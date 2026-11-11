@@ -12,7 +12,8 @@ import java.util.Properties;
 /**
  * Violation store in a consumer-committed directory. It ignores ArchUnit's
  * global store properties, never creates a missing store silently, and
- * re-records every rule when refreezing.
+ * re-records every rule when refreezing. A rule without an entry has no
+ * frozen violations, so all of its violations are new.
  */
 final class CommittedViolationStore implements ViolationStore {
 	private static final String STORED_RULES_FILE = "stored.rules";
@@ -40,20 +41,12 @@ final class CommittedViolationStore implements ViolationStore {
 	}
 
 	/**
-	 * Fails for a rule without a stored entry, because ArchUnit would otherwise
-	 * record all of its current violations silently.
+	 * Reports every rule as stored unless refreezing, because ArchUnit records
+	 * the current violations of a rule it does not find without failing.
 	 */
 	@Override
 	public boolean contains(ArchRule rule) {
-		if (refreeze) {
-			return false;
-		}
-		if (!delegate.contains(rule)) {
-			throw new ConfigurationException(
-					"violation store " + directory + " has no entry for rule '"
-							+ rule.getDescription() + "' (run with --refreeze to record it)");
-		}
-		return true;
+		return !refreeze;
 	}
 
 	@Override
@@ -63,6 +56,6 @@ final class CommittedViolationStore implements ViolationStore {
 
 	@Override
 	public List<String> getViolations(ArchRule rule) {
-		return delegate.getViolations(rule);
+		return delegate.contains(rule) ? delegate.getViolations(rule) : List.of();
 	}
 }

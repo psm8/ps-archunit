@@ -270,7 +270,7 @@ class MainTest {
 	}
 
 	@Test
-	void freeze_store_without_an_entry_for_the_rule_fails_instead_of_recording() throws Exception {
+	void rule_without_a_store_entry_reports_all_its_violations_as_new() throws Exception {
 		Path classes = fixture("switchable", "staticfield", "invalid");
 		Path store = Files.createTempDirectory("ps-archunit-store-").resolve("store");
 
@@ -282,10 +282,16 @@ class MainTest {
 				"io.github.psm8.archunit.fixtures.switchable.staticfield",
 				classes,
 				"--freeze-store", store.toString());
+		Result otherRuleAgain = run(
+				"io.github.psm8.archunit.fixtures.switchable.staticfield",
+				classes,
+				"--freeze-store", store.toString());
 
 		assertEquals(0, recorded.exitCode());
-		assertEquals(2, otherRule.exitCode());
-		assertTrue(otherRule.stderr().contains("--refreeze"));
+		assertEquals(1, otherRule.exitCode(), otherRule.stderr());
+		assertTrue(otherRule.stdout().contains("\"pass\":false"));
+		assertTrue(otherRule.stdout().contains("is a static non-final field"), otherRule.stdout());
+		assertEquals(1, otherRuleAgain.exitCode(), "the missing entry must not be recorded");
 	}
 
 	@Test

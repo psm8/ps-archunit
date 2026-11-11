@@ -16,15 +16,24 @@ violations are frozen; advisories are never frozen. The consumer commits the
 store to their repository. A missing store fails the run instead of being
 recreated silently; re-recording requires an explicit `--refreeze`.
 
+A rule without an entry in the store has no frozen violations: all of its
+violations are new and fail the run, and the store is not changed. A release
+can therefore add a rule without breaking frozen consumers; they fix the new
+violations or accept them with `--refreeze`. ArchUnit's default, recording the
+current violations of an unknown rule and passing, is not used, because it
+hides the violations of a new rule. Stopping the run until `--refreeze` is not
+used either, because `--refreeze` re-records every rule and would also accept
+new violations of the existing rules.
+
 JUnit consumers wrap the library's rules in `FreezingArchRule` themselves. The
 README documents how; the library adds no freezing API.
 
 Violation message text and the tier rule descriptions (the `as(...)` and
 `because(...)` text of `baseline`, `domainOriented`, and `hexagonal`) are a
 compatibility contract. The store is keyed by rule description, so changing it
-makes every consumer store fail; changing a violation message makes frozen
-violations look new. Both are breaking changes and must be called out in the
-release notes.
+makes all of its frozen violations look new; changing a violation message
+makes the matching frozen violations look new. Both are breaking changes and
+must be called out in the release notes.
 
 ## Consequences
 

@@ -208,6 +208,8 @@ and `@FunctionalInterface` types are exempt. It fails by default.
 An architecture violation recorded in a committed violation store and
 tolerated by later runs until it is fixed. Only violations are frozen, never
 advisories. A missing store fails the run rather than being recreated silently.
+A rule without an entry in the store has no frozen violations, so all of its
+violations are new.
 
 **Classification completeness**:
 The Level 2 and Level 3 requirement that every imported class under

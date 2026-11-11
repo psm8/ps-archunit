@@ -111,9 +111,11 @@ java -jar ps-archunit-cli-0.3.1-all.jar --config architecture.yml \
   --freeze-store architecture-store --refreeze
 ```
 
-A missing store, or a store without an entry for the current rule (for
-example after changing `tier` or `basePackage`), fails the run with exit code
-`2` instead of recording violations silently.
+A missing store fails the run with exit code `2` instead of being created
+silently. A rule without an entry in the store (a rule added by a new release,
+or after changing `tier` or `basePackage`) has no frozen violations: all of
+its violations are new and fail the run. The store is not changed; record them
+with `--refreeze` when they are accepted.
 Fixed violations drop out of the store automatically. Only violations are
 frozen; advisories are always reported. Frozen entries are matched by
 violation message text, so ps-archunit treats a reworded violation message as
