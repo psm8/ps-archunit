@@ -32,7 +32,7 @@ final class ConfigurationParser {
 			"setterMode", "setterExceptions", "staticFieldMode", "staticFieldExceptions");
 	private static final List<String> DOMAIN_KEYS = List.of(
 			"domain", "applicationPackages", "apiPackages", "infrastructurePackages",
-			"domainModelFrameworkPackages", "frameworkDependencyPackages",
+			"sharedLibPackages", "domainModelFrameworkPackages", "frameworkDependencyPackages",
 			"dependencyDirectionIgnores", "transactionAnnotation", "transactionPackages",
 			"defaultMethodMode", "defaultMethodExceptions");
 	private static final List<String> HEXAGONAL_KEYS = List.of(
@@ -168,6 +168,8 @@ final class ConfigurationParser {
 		applyPatterns(append, "apiPackages", builder::addApiPackages);
 		applyPatterns(replace, "infrastructurePackages", builder::infrastructurePackages);
 		applyPatterns(append, "infrastructurePackages", builder::addInfrastructurePackages);
+		applyPatterns(replace, "sharedLibPackages", builder::sharedLibPackages);
+		applyPatterns(append, "sharedLibPackages", builder::addSharedLibPackages);
 		applyPatterns(replace, "domainModelFrameworkPackages",
 				builder::domainModelFrameworkPackages);
 		applyPatterns(append, "domainModelFrameworkPackages",

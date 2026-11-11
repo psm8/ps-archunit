@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.3.1</version>
+    <version>0.4.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -45,7 +45,7 @@ architecture tests.
 
 The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
 SnakeYAML is not a dependency of the core `ps-archunit` JAR.
-CLI coordinates: `io.github.psm8:ps-archunit-cli:0.3.1`.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.4.0`.
 
 ## Architecture verification CLI
 
@@ -79,7 +79,7 @@ hexagonal:
 Run it against compiled bytecode:
 
 ```shell
-java -jar ps-archunit-cli/target/ps-archunit-cli-0.3.1-all.jar \
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.4.0-all.jar \
   --config architecture.yml \
   --classes target/classes \
   --classpath dependency-a.jar \
@@ -107,7 +107,7 @@ store and fails only on new ones. Commit the store directory to the consumer
 repository. Create or re-record it explicitly with `--refreeze`:
 
 ```shell
-java -jar ps-archunit-cli-0.3.1-all.jar --config architecture.yml \
+java -jar ps-archunit-cli-0.4.0-all.jar --config architecture.yml \
   --freeze-store architecture-store --refreeze
 ```
 
@@ -160,9 +160,9 @@ coordinates and `all` classifier:
 ```shell
 mkdir -p target/ps-archunit
 mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-  -Dartifact=io.github.psm8:ps-archunit-cli:0.3.1:jar:all \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all \
   -DoutputDirectory=target/ps-archunit
-java -jar target/ps-archunit/ps-archunit-cli-0.3.1-all.jar \
+java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar \
   --config architecture.yml
 ```
 
@@ -173,9 +173,9 @@ GitHub Actions example (add to a consumer workflow):
   run: |
     mkdir -p target/ps-archunit
     mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-      -Dartifact=io.github.psm8:ps-archunit-cli:0.3.1:jar:all \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all \
       -DoutputDirectory=target/ps-archunit
-    java -jar target/ps-archunit/ps-archunit-cli-0.3.1-all.jar \
+    java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar \
       --config architecture.yml
 ```
 
@@ -186,13 +186,13 @@ architecture:
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - mkdir -p target/ps-archunit
-    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.3.1:jar:all -DoutputDirectory=target/ps-archunit
-    - java -jar target/ps-archunit/ps-archunit-cli-0.3.1-all.jar --config architecture.yml
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar --config architecture.yml
 ```
 
 The snippets are consumer-side examples. Release publishing is handled by
 `.github/workflows/publish-release.yml` when a GitHub Release is published
-with a `v0.3.1` tag.
+with a `v0.4.0` tag.
 
 ## Consumer package contract
 
@@ -303,6 +303,7 @@ Standalone Level 2 defaults:
 - API: `basePackage.api..`, `basePackage.*.api..`
 - Infrastructure: `basePackage.infrastructure..`,
   `basePackage.*.infrastructure..`
+- Shared library: `basePackage.lib..`, `basePackage.*.lib..`
 - Model framework namespaces: JPA, Jakarta/Javax validation, and Jackson annotations
 
 Standalone Level 3 adds:
@@ -323,7 +324,7 @@ Each configurable package group has replacement and append semantics. For
 example, domain-oriented API configuration uses `apiPackages(...)` to replace
 the group and `addApiPackages(...)` to append paths.
 The same pattern applies to `infrastructurePackages(...)`,
-`domainModelFrameworkPackages(...)`, application groups, adapter groups,
+`sharedLibPackages(...)`, `domainModelFrameworkPackages(...)`, application groups, adapter groups,
 `domain(...)`, and `outputs(...)`. Builders accepting a lower-tier layout copy
 that snapshot; `toBuilder()` starts an independent builder.
 
@@ -333,9 +334,18 @@ and declared application plus inbound and outbound ports as application/core.
 The hexagonal layout exposes the inherited API boundary through rule behavior,
 not through a repeated public API selector.
 
+The shared library group holds technical code, such as request correlation or
+log field names, that API, infrastructure, and adapter code share. It is
+outside the core: domain, application, and port classes may not depend on it,
+and it may use frameworks. It is a leaf: its classes depend only on the group
+itself and on code outside `basePackage..`. A composition root inside it keeps
+its source-local exemption. Configure it with `sharedLibPackages(...)` or the
+`sharedLibPackages` key; see
+[ADR 0007](docs/adr/0007-shared-library-package-group.md).
+
 For Level 2 and Level 3, every imported class in `basePackage..` must belong
-to at least one configured domain, application/core, API, or infrastructure
-group. An empty group remains a no-op when no in-scope class uses it. Level 1
+to at least one configured domain, application/core, API, infrastructure, or
+shared library group. An empty group remains a no-op when no in-scope class uses it. Level 1
 does not apply this completeness check. Group overlap is allowed, and imported
 classes outside `basePackage..` are ignored by classification.
 
@@ -423,8 +433,10 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 
 ### Level 2: `domainOriented`
 
-- domain does not depend on application, API, or infrastructure;
-- application does not depend on API or infrastructure;
+- domain does not depend on application, API, infrastructure, or shared
+  library;
+- application does not depend on API, infrastructure, or shared library;
+- shared library depends on nothing else in the base package;
 - API may depend on application and domain, but not infrastructure;
 - infrastructure does not depend on API;
 - infrastructure may depend on domain and application;
@@ -549,8 +561,8 @@ The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
 metadata. Release profile `release` signs every artifact with GPG and publishes
 through the Sonatype Central Portal.
 
-The current release is `0.3.1`. Publish it by creating a GitHub Release with
-tag `v0.3.1`. The publishing workflow requires these repository secrets:
+The current release is `0.4.0`. Publish it by creating a GitHub Release with
+tag `v0.4.0`. The publishing workflow requires these repository secrets:
 
 - `MAVEN_CENTRAL_USERNAME`: Central Portal user-token username;
 - `MAVEN_CENTRAL_TOKEN`: Central Portal user-token password;

@@ -87,6 +87,7 @@ public final class DomainOrientedArchitectureRules {
 		configuredPackages.addAll(applicationPackages);
 		configuredPackages.addAll(apiPackages);
 		configuredPackages.addAll(infrastructurePackages);
+		configuredPackages.addAll(layout.sharedLibPackages());
 		return ArchitectureRuleSupport.classesBelongToConfiguredPackages(
 				layout.basePackage(),
 				configuredPackages);
@@ -102,22 +103,24 @@ public final class DomainOrientedArchitectureRules {
 		domainOutside.addAll(applicationPackages);
 		domainOutside.addAll(apiPackages);
 		domainOutside.addAll(infrastructurePackages);
+		domainOutside.addAll(layout.sharedLibPackages());
 		addDependencyDirectionRule(
 				rules,
 				layout.domain(),
 				domainOutside,
 				layout,
-				"domain classes do not depend on application, API, or infrastructure");
+				"domain classes do not depend on application, API, infrastructure, or shared library");
 
 		List<String> applicationOutside = new ArrayList<>();
 		applicationOutside.addAll(apiPackages);
 		applicationOutside.addAll(infrastructurePackages);
+		applicationOutside.addAll(layout.sharedLibPackages());
 		addDependencyDirectionRule(
 				rules,
 				applicationPackages,
 				applicationOutside,
 				layout,
-				"application classes do not depend on API or infrastructure");
+				"application classes do not depend on API, infrastructure, or shared library");
 
 		List<String> apiOutside = new ArrayList<>();
 		apiOutside.addAll(infrastructurePackages);
@@ -134,6 +137,17 @@ public final class DomainOrientedArchitectureRules {
 				apiPackages,
 				layout,
 				"infrastructure classes do not depend on API");
+
+		if (!layout.sharedLibPackages().isEmpty()) {
+			rules.add(classes().that()
+					.resideInAnyPackage(layout.sharedLibPackages().toArray(String[]::new))
+					.should(ArchitectureRuleSupport.haveNoDependenciesOnExceptCompositionRoots(
+							List.of(layout.basePackage() + ".."),
+							layout.sharedLibPackages(),
+							layout.dependencyDirectionIgnores()))
+					.as("shared library classes depend on nothing else in the base package")
+					.allowEmptyShould(true));
+		}
 		return ArchitectureRuleSupport.combine(rules);
 	}
 

@@ -13,6 +13,7 @@ public final class DomainOrientedLayout {
 	private final List<String> applicationPackages;
 	private final List<String> apiPackages;
 	private final List<String> infrastructurePackages;
+	private final List<String> sharedLibPackages;
 	private final List<String> domainModelFrameworkPackages;
 	private final List<String> frameworkDependencyPackages;
 	private final List<BaselineLayout.PatternPair> dependencyDirectionIgnores;
@@ -28,6 +29,7 @@ public final class DomainOrientedLayout {
 		applicationPackages = LayoutSupport.resolvePatterns(builder.applicationPackages, basePackage());
 		apiPackages = LayoutSupport.resolvePatterns(builder.apiPackages, basePackage());
 		infrastructurePackages = LayoutSupport.resolvePatterns(builder.infrastructurePackages, basePackage());
+		sharedLibPackages = LayoutSupport.resolvePatterns(builder.sharedLibPackages, basePackage());
 		domainModelFrameworkPackages = LayoutSupport.resolvePatterns(builder.domainModelFrameworkPackages, basePackage());
 		frameworkDependencyPackages = LayoutSupport.resolvePatterns(builder.frameworkDependencyPackages, basePackage());
 		dependencyDirectionIgnores = resolvePatternPairs(builder.dependencyDirectionIgnores, basePackage());
@@ -65,6 +67,7 @@ public final class DomainOrientedLayout {
 				.applicationPackages(applicationPackages.toArray(String[]::new))
 				.apiPackages(apiPackages.toArray(String[]::new))
 				.infrastructurePackages(infrastructurePackages.toArray(String[]::new))
+				.sharedLibPackages(sharedLibPackages.toArray(String[]::new))
 				.domainModelFrameworkPackages(
 						domainModelFrameworkPackages.toArray(String[]::new))
 				.frameworkDependencyPackages(
@@ -74,6 +77,7 @@ public final class DomainOrientedLayout {
 		copy.applicationConfigured = true;
 		copy.apiConfigured = true;
 		copy.infrastructureConfigured = true;
+		copy.sharedLibConfigured = true;
 		copy.domainModelFrameworkConfigured = true;
 		copy.defaultMethodMode(defaultMethodMode)
 				.defaultMethodExceptions(defaultMethodExceptions.toArray(String[]::new));
@@ -170,6 +174,15 @@ public final class DomainOrientedLayout {
 		return infrastructurePackages;
 	}
 
+	/**
+	 * Technical code shared by API, infrastructure, adapter, and composition
+	 * root code. The core may not depend on it, and it depends on nothing else
+	 * in the base package.
+	 */
+	public List<String> sharedLibPackages() {
+		return sharedLibPackages;
+	}
+
 	public List<String> domainModelFrameworkPackages() {
 		return domainModelFrameworkPackages;
 	}
@@ -196,6 +209,7 @@ public final class DomainOrientedLayout {
 		private final List<String> applicationPackages = new ArrayList<>();
 		private final List<String> apiPackages = new ArrayList<>();
 		private final List<String> infrastructurePackages = new ArrayList<>();
+		private final List<String> sharedLibPackages = new ArrayList<>();
 		private final List<String> domainModelFrameworkPackages = new ArrayList<>();
 		private final List<String> frameworkDependencyPackages = new ArrayList<>();
 		private final List<BaselineLayout.PatternPair> dependencyDirectionIgnores =
@@ -208,6 +222,7 @@ public final class DomainOrientedLayout {
 		private boolean applicationConfigured;
 		private boolean apiConfigured;
 		private boolean infrastructureConfigured;
+		private boolean sharedLibConfigured;
 		private boolean domainModelFrameworkConfigured;
 		private boolean frameworkDependencyConfigured;
 		private boolean transactionPackagesConfigured;
@@ -350,6 +365,17 @@ public final class DomainOrientedLayout {
 			return this;
 		}
 
+		public Builder sharedLibPackages(String... values) {
+			sharedLibConfigured = true;
+			LayoutSupport.replacePatterns(sharedLibPackages, values);
+			return this;
+		}
+
+		public Builder addSharedLibPackages(String... values) {
+			LayoutSupport.addPatterns(sharedLibPackages, values);
+			return this;
+		}
+
 		public Builder domainModelFrameworkPackages(String... values) {
 			domainModelFrameworkConfigured = true;
 			LayoutSupport.replacePatterns(domainModelFrameworkPackages, values);
@@ -414,6 +440,12 @@ public final class DomainOrientedLayout {
 						LayoutSupport.verticalPackagePatterns(
 								baselinePackage(), "infrastructure..")
 								.toArray(String[]::new));
+			}
+			if (!sharedLibConfigured) {
+				LayoutSupport.prependPatterns(
+						sharedLibPackages,
+						LayoutSupport.verticalPackagePatterns(
+								baselinePackage(), "lib..").toArray(String[]::new));
 			}
 			if (!domainModelFrameworkConfigured) {
 				LayoutSupport.prependPatterns(

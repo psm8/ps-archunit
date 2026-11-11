@@ -2,6 +2,7 @@ package io.github.psm8.archunit.cli;
 
 import io.github.psm8.archunit.BaselineLayout;
 import io.github.psm8.archunit.ConfigurationVisibility;
+import io.github.psm8.archunit.DomainOrientedLayout;
 import io.github.psm8.archunit.HexagonalLayout;
 import io.github.psm8.archunit.RuleMode;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,37 @@ class CliConfigurationTest {
 				layout.portSignatureExceptions());
 		assertEquals(List.of(), layout.inboundAdapterPackages());
 		assertEquals(List.of(), layout.outboundAdapterPackages());
+	}
+
+	@Test
+	void parses_shared_lib_packages_under_replace_and_append() {
+		String replaced = """
+				schemaVersion: 1
+				tier: hexagonal
+				basePackage: com.acme.orders
+				replace:
+				  sharedLibPackages: ["{base}.observability.."]
+				""";
+		String appended = """
+				schemaVersion: 1
+				tier: domainOriented
+				basePackage: com.acme.orders
+				append:
+				  sharedLibPackages: ["{base}.observability.."]
+				""";
+
+		HexagonalLayout hexagonal =
+				(HexagonalLayout) new ConfigurationParser().parse(replaced).layout();
+		DomainOrientedLayout domainOriented =
+				(DomainOrientedLayout) new ConfigurationParser().parse(appended).layout();
+
+		assertEquals(List.of("com.acme.orders.observability.."), hexagonal.sharedLibPackages());
+		assertEquals(
+				List.of(
+						"com.acme.orders.lib..",
+						"com.acme.orders.*.lib..",
+						"com.acme.orders.observability.."),
+				domainOriented.sharedLibPackages());
 	}
 
 	@Test

@@ -75,6 +75,17 @@ final class ArchitectureRuleSupport {
 	static ArchCondition<JavaClass> haveNoDependenciesOnExceptCompositionRoots(
 			List<String> banned,
 			List<BaselineLayout.PatternPair> exceptions) {
+		return haveNoDependenciesOnExceptCompositionRoots(banned, List.of(), exceptions);
+	}
+
+	/**
+	 * Bans dependencies on {@code banned} packages unless the target is also in
+	 * an {@code allowed} package.
+	 */
+	static ArchCondition<JavaClass> haveNoDependenciesOnExceptCompositionRoots(
+			List<String> banned,
+			List<String> allowed,
+			List<BaselineLayout.PatternPair> exceptions) {
 		return new ArchCondition<>("not depend on banned packages outside composition roots") {
 			@Override
 			public void check(JavaClass source, ConditionEvents events) {
@@ -83,7 +94,9 @@ final class ArchitectureRuleSupport {
 				}
 				for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
 					JavaClass target = dependency.getTargetClass();
-					if (isInAnyPackage(target, banned) && !isIgnored(source, target, exceptions)) {
+					if (isInAnyPackage(target, banned)
+							&& !isInAnyPackage(target, allowed)
+							&& !isIgnored(source, target, exceptions)) {
 						events.add(SimpleConditionEvent.violated(source,
 								dependency.getDescription()));
 					}

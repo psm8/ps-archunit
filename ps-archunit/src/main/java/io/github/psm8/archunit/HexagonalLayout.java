@@ -111,6 +111,10 @@ public final class HexagonalLayout {
 		return domainOriented.infrastructurePackages();
 	}
 
+	public List<String> sharedLibPackages() {
+		return domainOriented.sharedLibPackages();
+	}
+
 	public List<String> domainModelFrameworkPackages() {
 		return domainOriented.domainModelFrameworkPackages();
 	}
@@ -409,6 +413,16 @@ public final class HexagonalLayout {
 
 		public Builder addInfrastructurePackages(String... values) {
 			domainOriented.addInfrastructurePackages(values);
+			return this;
+		}
+
+		public Builder sharedLibPackages(String... values) {
+			domainOriented.sharedLibPackages(values);
+			return this;
+		}
+
+		public Builder addSharedLibPackages(String... values) {
+			domainOriented.addSharedLibPackages(values);
 			return this;
 		}
 
