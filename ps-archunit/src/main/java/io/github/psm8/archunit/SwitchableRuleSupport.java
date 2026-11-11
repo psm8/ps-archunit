@@ -39,7 +39,7 @@ final class SwitchableRuleSupport {
 		return classes().that()
 				.resideInAnyPackage(layout.basePackage() + "..")
 				.and(notExcepted(layout.setterExceptions()))
-				.should(haveNoSetters(layout.basePackage()))
+				.should(haveNoSetters())
 				.as("classes under " + layout.basePackage() + " have no setters")
 				.because("mutable state should change through behavior, not setters")
 				.allowEmptyShould(true);
@@ -77,13 +77,13 @@ final class SwitchableRuleSupport {
 		return DescribedPredicate.not(ArchitectureRuleSupport.classPattern(exceptions));
 	}
 
-	private static ArchCondition<JavaClass> haveNoSetters(String basePackage) {
+	private static ArchCondition<JavaClass> haveNoSetters() {
 		return new ArchCondition<>("have no setters") {
 			@Override
 			public void check(JavaClass item, ConditionEvents events) {
 				for (JavaMethod method : item.getMethods()) {
 					if (!isSetterCandidate(method)
-							|| overridesExternalMethod(method, basePackage)) {
+							|| mayOverride(method)) {
 						continue;
 					}
 					if (SETTER_NAME.matcher(method.getName()).matches()) {
@@ -122,17 +122,22 @@ final class SwitchableRuleSupport {
 	}
 
 	/**
-	 * Matches by name and arity so that overrides of generic methods, whose
-	 * erased parameter types differ, are recognized as well.
+	 * Overrides are exempt wherever the supertype lives: a setter declared by an
+	 * analyzed supertype is reported at its declaration. A supertype that could
+	 * not be inspected is treated as declaring the method. Matching uses name and
+	 * arity so that overrides of generic methods are recognized as well.
 	 */
-	private static boolean overridesExternalMethod(JavaMethod method, String basePackage) {
+	private static boolean mayOverride(JavaMethod method) {
 		int arity = method.getRawParameterTypes().size();
 		JavaClass owner = method.getOwner();
-		return Stream.concat(
+		List<JavaClass> supertypes = Stream.concat(
 						owner.getAllRawSuperclasses().stream(),
 						owner.getAllRawInterfaces().stream())
-				.filter(type -> !ArchitectureRuleSupport.isInBasePackage(
-						type.getPackageName(), basePackage))
+				.toList();
+		if (supertypes.stream().anyMatch(type -> !type.isFullyImported())) {
+			return true;
+		}
+		return supertypes.stream()
 				.flatMap(type -> type.getMethods().stream())
 				.filter(candidate -> !candidate.getModifiers().contains(JavaModifier.PRIVATE)
 						&& !candidate.getModifiers().contains(JavaModifier.STATIC))

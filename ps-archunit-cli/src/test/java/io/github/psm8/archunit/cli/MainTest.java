@@ -26,7 +26,7 @@ class MainTest {
 
 		assertEquals(0, exitCode);
 		assertTrue(output.toString().contains("unknown")
-				|| output.toString().contains("0.3.0"));
+				|| output.toString().contains("0.3.1"));
 	}
 
 	@Test
@@ -216,6 +216,57 @@ class MainTest {
 
 		assertEquals(2, result.exitCode());
 		assertTrue(result.stderr().contains("--classpath"), result.stderr());
+	}
+
+	@Test
+	void setters_overriding_supertypes_that_cannot_be_inspected_are_exempt() throws Exception {
+		Path sources = Files.createTempDirectory("ps-archunit-sources-");
+		Path classes = Files.createTempDirectory("ps-archunit-classes-");
+		Path contract = sources.resolve("org/extlib/Configurable.java");
+		Path widget = sources.resolve("com/acme/opaque/model/Widget.java");
+		Path plain = sources.resolve("com/acme/opaque/model/Plain.java");
+		Files.createDirectories(contract.getParent());
+		Files.createDirectories(widget.getParent());
+		Files.writeString(contract, """
+				package org.extlib;
+
+				public interface Configurable {
+					void setOption(String option);
+				}
+				""");
+		Files.writeString(widget, """
+				package com.acme.opaque.model;
+
+				public class Widget implements org.extlib.Configurable {
+					private String option;
+
+					@Override
+					public void setOption(String option) {
+						this.option = option;
+					}
+				}
+				""");
+		Files.writeString(plain, """
+				package com.acme.opaque.model;
+
+				public class Plain {
+					private String color;
+
+					public void setColor(String color) {
+						this.color = color;
+					}
+				}
+				""");
+		int compiled = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-d", classes.toString(), contract.toString(), widget.toString(), plain.toString());
+		assertEquals(0, compiled);
+		Files.delete(classes.resolve("org/extlib/Configurable.class"));
+
+		Result result = run("com.acme.opaque", classes);
+
+		assertEquals(0, result.exitCode(), result.stderr());
+		assertTrue(result.stdout().contains("Plain.setColor(java.lang.String) is a setter"));
+		assertFalse(result.stdout().contains("Widget.setOption"));
 	}
 
 	@Test

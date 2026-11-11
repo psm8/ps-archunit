@@ -188,9 +188,13 @@ classes from one switchable rule. It does not exempt them from any other rule.
 **Mutable state rules**:
 Two Baseline rules over every class under `basePackage..`: no non-private
 setters (named `set…` or fluent accessors writing a same-named field), except
-overrides of methods declared outside the base package; and no static
+overrides of a supertype method; and no static
 non-final fields. Setters run in advisory mode by default; static non-final
-fields fail by default.
+fields fail by default. An analyzed supertype's setter is reported once, at
+its declaration; a supertype that could not be inspected is assumed to declare
+the overridden method.
+_Avoid_: Exempting builders by name; a builder whose `build()` enforces no
+invariants is a setter surface like any other.
 
 **Interface default method rule**:
 A Level 2+ rule that rejects default methods on interfaces in the domain and

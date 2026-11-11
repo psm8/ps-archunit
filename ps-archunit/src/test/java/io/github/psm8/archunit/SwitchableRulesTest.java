@@ -108,6 +108,16 @@ class SwitchableRulesTest {
 	}
 
 	@Test
+	void setter_rule_reports_in_base_contracts_once_at_their_declaration() {
+		String basePackage = FIXTURES + ".setter.inbase";
+
+		String message = failureOf(baselineAdvisories(basePackage), basePackage);
+
+		assertTrue(message.contains(basePackage + ".model.Named.setName(java.lang.String) is a setter"));
+		assertFalse(message.contains("NamedAccount.setName"));
+	}
+
+	@Test
 	void setter_exceptions_accept_exact_class_names_and_package_patterns() {
 		BaselineLayout byClass = BaselineLayout.builder(NAMED_SETTER)
 				.setterMode(RuleMode.FAIL)
