@@ -12,6 +12,8 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +41,7 @@ final class SwitchableRuleSupport {
 		return classes().that()
 				.resideInAnyPackage(layout.basePackage() + "..")
 				.and(notExcepted(layout.setterExceptions()))
-				.should(haveNoSetters())
+				.should(haveNoSetters(layout.basePackage()))
 				.as("classes under " + layout.basePackage() + " have no setters")
 				.because("mutable state should change through behavior, not setters")
 				.allowEmptyShould(true);
@@ -77,13 +79,13 @@ final class SwitchableRuleSupport {
 		return DescribedPredicate.not(ArchitectureRuleSupport.classPattern(exceptions));
 	}
 
-	private static ArchCondition<JavaClass> haveNoSetters() {
+	private static ArchCondition<JavaClass> haveNoSetters(String basePackage) {
 		return new ArchCondition<>("have no setters") {
 			@Override
 			public void check(JavaClass item, ConditionEvents events) {
 				for (JavaMethod method : item.getMethods()) {
 					if (!isSetterCandidate(method)
-							|| mayOverride(method)) {
+							|| mayOverride(method, basePackage)) {
 						continue;
 					}
 					if (SETTER_NAME.matcher(method.getName()).matches()) {
@@ -122,27 +124,73 @@ final class SwitchableRuleSupport {
 	}
 
 	/**
-	 * Overrides are exempt wherever the supertype lives: a setter declared by an
-	 * analyzed supertype is reported at its declaration. A supertype that could
-	 * not be inspected is treated as declaring the method. Matching uses name and
+	 * A setter is exempt when it overrides a method that is reported elsewhere
+	 * or that it does not own: a reported setter of an analyzed supertype in the
+	 * base package, any method of a supertype outside the base package, or a
+	 * method of a supertype that could not be inspected. Matching uses name and
 	 * arity so that overrides of generic methods are recognized as well.
 	 */
-	private static boolean mayOverride(JavaMethod method) {
-		int arity = method.getRawParameterTypes().size();
+	private static boolean mayOverride(JavaMethod method, String basePackage) {
 		JavaClass owner = method.getOwner();
 		List<JavaClass> supertypes = Stream.concat(
 						owner.getAllRawSuperclasses().stream(),
 						owner.getAllRawInterfaces().stream())
 				.toList();
-		if (supertypes.stream().anyMatch(type -> !type.isFullyImported())) {
-			return true;
+		for (JavaClass supertype : supertypes) {
+			if (!supertype.isFullyImported()) {
+				if (!isJdkType(supertype) || jdkTypeDeclares(supertype, method)) {
+					return true;
+				}
+				continue;
+			}
+			boolean external = !ArchitectureRuleSupport.isInBasePackage(
+					supertype.getPackageName(), basePackage);
+			for (JavaMethod candidate : supertype.getMethods()) {
+				if (isOverriddenBy(candidate, method)
+						&& (external || isReportedSetter(candidate))) {
+					return true;
+				}
+			}
 		}
-		return supertypes.stream()
-				.flatMap(type -> type.getMethods().stream())
-				.filter(candidate -> !candidate.getModifiers().contains(JavaModifier.PRIVATE)
-						&& !candidate.getModifiers().contains(JavaModifier.STATIC))
-				.anyMatch(candidate -> candidate.getName().equals(method.getName())
-						&& candidate.getRawParameterTypes().size() == arity);
+		return false;
+	}
+
+	private static boolean isOverriddenBy(JavaMethod candidate, JavaMethod method) {
+		Set<JavaModifier> modifiers = candidate.getModifiers();
+		boolean visible = modifiers.contains(JavaModifier.PUBLIC)
+				|| modifiers.contains(JavaModifier.PROTECTED)
+				|| candidate.getOwner().getPackageName()
+				.equals(method.getOwner().getPackageName());
+		return visible
+				&& !modifiers.contains(JavaModifier.PRIVATE)
+				&& !modifiers.contains(JavaModifier.STATIC)
+				&& candidate.getName().equals(method.getName())
+				&& candidate.getRawParameterTypes().size()
+				== method.getRawParameterTypes().size();
+	}
+
+	private static boolean isReportedSetter(JavaMethod method) {
+		return SETTER_NAME.matcher(method.getName()).matches()
+				|| writesOwnField(method, method.getName());
+	}
+
+	// JDK types are not imported when missing dependencies are not resolved,
+	// but they are always loadable, so they are inspected by reflection.
+	private static boolean isJdkType(JavaClass type) {
+		return type.getName().startsWith("java.");
+	}
+
+	private static boolean jdkTypeDeclares(JavaClass type, JavaMethod method) {
+		for (Method candidate : type.reflect().getDeclaredMethods()) {
+			int modifiers = candidate.getModifiers();
+			if (!Modifier.isPrivate(modifiers)
+					&& !Modifier.isStatic(modifiers)
+					&& candidate.getName().equals(method.getName())
+					&& candidate.getParameterCount() == method.getRawParameterTypes().size()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static ArchCondition<JavaClass> haveNoStaticNonFinalFields() {

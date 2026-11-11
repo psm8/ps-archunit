@@ -1,5 +1,6 @@
 package io.github.psm8.archunit;
 
+import com.tngtech.archunit.ArchConfiguration;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
@@ -115,6 +116,36 @@ class SwitchableRulesTest {
 
 		assertTrue(message.contains(basePackage + ".model.Named.setName(java.lang.String) is a setter"));
 		assertFalse(message.contains("NamedAccount.setName"));
+	}
+
+	@Test
+	void fluent_setters_implementing_abstract_fluent_methods_are_reported() {
+		String basePackage = FIXTURES + ".setter.fluentcontract";
+
+		String message = failureOf(baselineAdvisories(basePackage), basePackage);
+
+		assertTrue(message.contains(basePackage
+				+ ".model.FluentAccount.name(java.lang.String) is a fluent setter of field name"));
+	}
+
+	@Test
+	void package_private_methods_in_other_packages_are_not_overridden() {
+		String basePackage = FIXTURES + ".setter.crosspackage";
+
+		String message = failureOf(baselineAdvisories(basePackage), basePackage);
+
+		assertTrue(message.contains(basePackage + ".ext.Sub.setLevel(int) is a setter"));
+	}
+
+	@Test
+	void setters_are_reported_when_missing_dependencies_are_not_resolved() {
+		ArchConfiguration.withThreadLocalScope(configuration -> {
+			configuration.setResolveMissingDependenciesFromClassPath(false);
+
+			String message = failureOf(baselineAdvisories(NAMED_SETTER), NAMED_SETTER);
+
+			assertTrue(message.contains("Account.setName(java.lang.String) is a setter"));
+		});
 	}
 
 	@Test
