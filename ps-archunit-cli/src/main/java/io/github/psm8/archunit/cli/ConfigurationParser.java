@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 final class ConfigurationParser {
 	private static final List<String> TOP_LEVEL_KEYS = List.of(
@@ -311,7 +312,7 @@ final class ConfigurationParser {
 	private static void applyRuleMode(
 			Map<String, Object> section,
 			String key,
-			java.util.function.Consumer<RuleMode> consumer) {
+			Consumer<RuleMode> consumer) {
 		if (section.containsKey(key)) {
 			consumer.accept(parseRuleMode(key, section.get(key)));
 		}

@@ -39,9 +39,21 @@ final class CommittedViolationStore implements ViolationStore {
 		delegate.initialize(properties);
 	}
 
+	/**
+	 * Fails for a rule without a stored entry, because ArchUnit would otherwise
+	 * record all of its current violations silently.
+	 */
 	@Override
 	public boolean contains(ArchRule rule) {
-		return !refreeze && delegate.contains(rule);
+		if (refreeze) {
+			return false;
+		}
+		if (!delegate.contains(rule)) {
+			throw new ConfigurationException(
+					"violation store " + directory + " has no entry for rule '"
+							+ rule.getDescription() + "' (run with --refreeze to record it)");
+		}
+		return true;
 	}
 
 	@Override

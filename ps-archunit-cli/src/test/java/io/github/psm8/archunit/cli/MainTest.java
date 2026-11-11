@@ -119,6 +119,55 @@ class MainTest {
 		assertEquals(0, result.exitCode());
 		assertTrue(result.stdout().contains("\"pass\":true,\"violations\":[],\"advisories\":["));
 		assertTrue(result.stdout().contains("Account.setName(java.lang.String) is a setter"));
+		assertFalse(result.stdout().contains("was violated"));
+	}
+
+	@Test
+	void consumer_classes_outside_the_runner_classpath_are_loadable_by_rules() throws Exception {
+		Path sources = Files.createTempDirectory("ps-archunit-sources-");
+		Path classes = Files.createTempDirectory("ps-archunit-classes-");
+		Path money = sources.resolve("com/acme/isolated/domain/Money.java");
+		Files.createDirectories(money.getParent());
+		Files.writeString(money, """
+				package com.acme.isolated.domain;
+
+				public sealed interface Money permits Money.Euro {
+					long cents();
+
+					default boolean isPositive() {
+						return cents() > 0;
+					}
+
+					record Euro(long cents) implements Money {
+					}
+				}
+				""");
+		int compiled = javax.tools.ToolProvider.getSystemJavaCompiler().run(
+				null, null, null, "-d", classes.toString(), money.toString());
+		assertEquals(0, compiled);
+
+		Result result = run("domainOriented", "com.acme.isolated", classes);
+
+		assertEquals(0, result.exitCode(), result.stderr());
+	}
+
+	@Test
+	void freeze_store_without_an_entry_for_the_rule_fails_instead_of_recording() throws Exception {
+		Path classes = fixture("switchable", "staticfield", "invalid");
+		Path store = Files.createTempDirectory("ps-archunit-store-").resolve("store");
+
+		Result recorded = run(
+				"io.github.psm8.archunit.fixtures.switchable.staticfield.invalid",
+				classes,
+				"--freeze-store", store.toString(), "--refreeze");
+		Result otherRule = run(
+				"io.github.psm8.archunit.fixtures.switchable.staticfield",
+				classes,
+				"--freeze-store", store.toString());
+
+		assertEquals(0, recorded.exitCode());
+		assertEquals(2, otherRule.exitCode());
+		assertTrue(otherRule.stderr().contains("--refreeze"));
 	}
 
 	@Test
@@ -163,13 +212,22 @@ class MainTest {
 
 	private static Result run(String basePackage, Path classes, String... extraArguments)
 			throws Exception {
+		return run("baseline", basePackage, classes, extraArguments);
+	}
+
+	private static Result run(
+			String tier,
+			String basePackage,
+			Path classes,
+			String... extraArguments)
+			throws Exception {
 		Path config = Files.createTempFile("ps-archunit-cli-", ".yml");
 		try {
 			Files.writeString(config, """
 					schemaVersion: 1
-					tier: baseline
+					tier: %s
 					basePackage: %s
-					""".formatted(basePackage));
+					""".formatted(tier, basePackage));
 			List<String> arguments = new ArrayList<>(List.of(
 					"--config", config.toString(),
 					"--classes", classes.toString(),

@@ -13,6 +13,8 @@ import io.github.psm8.archunit.HexagonalLayout;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -40,8 +42,18 @@ public final class Main {
 			if (classes.isEmpty()) {
 				throw new ConfigurationException("class input contains no class files");
 			}
-			List<String> violations = findings(verificationRule(configuration, options), classes);
-			List<String> advisories = findings(advisoryRule(configuration), classes);
+			List<String> violations;
+			List<String> advisories;
+			Thread thread = Thread.currentThread();
+			ClassLoader previous = thread.getContextClassLoader();
+			try (URLClassLoader consumerClasses = consumerClassLoader(inputs)) {
+				// Rules that inspect class modifiers (such as sealed) load consumer classes.
+				thread.setContextClassLoader(consumerClasses);
+				violations = violations(verificationRule(configuration, options), classes);
+				advisories = advisories(advisoryRule(configuration), classes);
+			} finally {
+				thread.setContextClassLoader(previous);
+			}
 			writeReport(options, stdout, new ArchitectureReport(
 					Version.current(),
 					configuration.tier().yamlName(),
@@ -50,10 +62,18 @@ public final class Main {
 					violations,
 					advisories));
 			return violations.isEmpty() ? 0 : 1;
-		} catch (IOException | RuntimeException failure) {
+		} catch (IOException | RuntimeException | LinkageError failure) {
 			stderr.println("ps-archunit: " + message(failure));
 			return 2;
 		}
+	}
+
+	private static URLClassLoader consumerClassLoader(List<Path> inputs) throws IOException {
+		URL[] urls = new URL[inputs.size()];
+		for (int index = 0; index < urls.length; index++) {
+			urls[index] = inputs.get(index).toUri().toURL();
+		}
+		return new URLClassLoader(urls, ClassLoader.getPlatformClassLoader());
 	}
 
 	private static ArchRule verificationRule(
@@ -85,13 +105,17 @@ public final class Main {
 		};
 	}
 
-	private static List<String> findings(ArchRule rule, JavaClasses classes) {
+	private static List<String> violations(ArchRule rule, JavaClasses classes) {
 		try {
 			rule.check(classes);
 			return List.of();
 		} catch (AssertionError failure) {
 			return lines(failure);
 		}
+	}
+
+	private static List<String> advisories(ArchRule rule, JavaClasses classes) {
+		return List.copyOf(rule.evaluate(classes).getFailureReport().getDetails());
 	}
 
 	private static List<Path> validateInputs(CliArguments options) throws IOException {
@@ -152,7 +176,7 @@ public final class Main {
 		Files.writeString(options.output(), rendered);
 	}
 
-	private static String message(Exception failure) {
+	private static String message(Throwable failure) {
 		return failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
 	}
 }

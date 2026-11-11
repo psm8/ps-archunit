@@ -111,7 +111,9 @@ java -jar ps-archunit-cli-0.3.0-all.jar --config architecture.yml \
   --freeze-store architecture-store --refreeze
 ```
 
-A missing store fails the run with exit code `2` instead of being recreated.
+A missing store, or a store without an entry for the current rule (for
+example after changing `tier` or `basePackage`), fails the run with exit code
+`2` instead of recording violations silently.
 Fixed violations drop out of the store automatically. Only violations are
 frozen; advisories are always reported. Frozen entries are matched by
 violation message text, so ps-archunit treats a reworded violation message as
@@ -479,9 +481,8 @@ package com.acme.orders.architecture;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import org.junit.jupiter.api.Test;
-
 import com.tngtech.archunit.lang.EvaluationResult;
+import org.junit.jupiter.api.Test;
 
 import static io.github.psm8.archunit.HexagonalArchitectureRules.hexagonal;
 import static io.github.psm8.archunit.HexagonalArchitectureRules.hexagonalAdvisories;

@@ -121,18 +121,21 @@ final class SwitchableRuleSupport {
 		return false;
 	}
 
+	/**
+	 * Matches by name and arity so that overrides of generic methods, whose
+	 * erased parameter types differ, are recognized as well.
+	 */
 	private static boolean overridesExternalMethod(JavaMethod method, String basePackage) {
-		String[] parameterTypes = method.getRawParameterTypes().stream()
-				.map(JavaClass::getName)
-				.toArray(String[]::new);
+		int arity = method.getRawParameterTypes().size();
 		JavaClass owner = method.getOwner();
 		return Stream.concat(
 						owner.getAllRawSuperclasses().stream(),
 						owner.getAllRawInterfaces().stream())
 				.filter(type -> !ArchitectureRuleSupport.isInBasePackage(
 						type.getPackageName(), basePackage))
-				.anyMatch(type -> type.tryGetMethod(method.getName(), parameterTypes)
-						.isPresent());
+				.flatMap(type -> type.getMethods().stream())
+				.anyMatch(candidate -> candidate.getName().equals(method.getName())
+						&& candidate.getRawParameterTypes().size() == arity);
 	}
 
 	private static ArchCondition<JavaClass> haveNoStaticNonFinalFields() {

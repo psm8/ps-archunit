@@ -5,6 +5,8 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static io.github.psm8.archunit.BaselineArchitectureRules.baseline;
 import static io.github.psm8.archunit.BaselineArchitectureRules.baselineAdvisories;
 import static io.github.psm8.archunit.DomainOrientedArchitectureRules.domainOriented;
@@ -96,6 +98,16 @@ class SwitchableRulesTest {
 	}
 
 	@Test
+	void setter_rule_allows_overrides_of_generic_methods_declared_outside_the_base_package() {
+		String basePackage = FIXTURES + ".setter.generic";
+		BaselineLayout layout = BaselineLayout.builder(basePackage)
+				.setterMode(RuleMode.FAIL)
+				.build();
+
+		assertDoesNotThrow(() -> baseline(layout).check(imported(basePackage)));
+	}
+
+	@Test
 	void setter_exceptions_accept_exact_class_names_and_package_patterns() {
 		BaselineLayout byClass = BaselineLayout.builder(NAMED_SETTER)
 				.setterMode(RuleMode.FAIL)
@@ -108,7 +120,7 @@ class SwitchableRulesTest {
 
 		assertDoesNotThrow(() -> baseline(byClass).check(imported(NAMED_SETTER)));
 		assertDoesNotThrow(() -> baseline(byPackage).check(imported(NAMED_SETTER)));
-		assertEquals(java.util.List.of(NAMED_SETTER + ".model.Account"), byClass.setterExceptions());
+		assertEquals(List.of(NAMED_SETTER + ".model.Account"), byClass.setterExceptions());
 	}
 
 	@Test
@@ -218,14 +230,14 @@ class SwitchableRulesTest {
 
 		BaselineLayout copy = baselineLayout.toBuilder().build();
 		assertEquals(RuleMode.FAIL, copy.setterMode());
-		assertEquals(java.util.List.of("com.acme.orders.legacy.."), copy.setterExceptions());
+		assertEquals(List.of("com.acme.orders.legacy.."), copy.setterExceptions());
 		assertEquals(RuleMode.ADVISORY, copy.staticFieldMode());
-		assertEquals(java.util.List.of("com.acme.orders.Registry"), copy.staticFieldExceptions());
+		assertEquals(List.of("com.acme.orders.Registry"), copy.staticFieldExceptions());
 		assertEquals(RuleMode.FAIL, domainLayout.setterMode());
 		assertEquals(RuleMode.ADVISORY, domainLayout.toBuilder().build().defaultMethodMode());
 		assertEquals(RuleMode.ADVISORY, hexagonalLayout.defaultMethodMode());
 		assertEquals(
-				java.util.List.of("com.acme.orders.domain.Legacy"),
+				List.of("com.acme.orders.domain.Legacy"),
 				hexagonalLayout.toBuilder().build().defaultMethodExceptions());
 		assertEquals(RuleMode.ADVISORY, hexagonalLayout.staticFieldMode());
 	}
