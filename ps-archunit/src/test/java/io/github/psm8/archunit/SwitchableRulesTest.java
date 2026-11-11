@@ -120,6 +120,10 @@ class SwitchableRulesTest {
 
 		assertDoesNotThrow(() -> baseline(byClass).check(imported(NAMED_SETTER)));
 		assertDoesNotThrow(() -> baseline(byPackage).check(imported(NAMED_SETTER)));
+		assertDoesNotThrow(() -> baseline(BaselineLayout.builder(FLUENT_SETTER)
+				.setterMode(RuleMode.FAIL)
+				.setterExceptions("{base}..*Account")
+				.build()).check(imported(FLUENT_SETTER)));
 		assertEquals(List.of(NAMED_SETTER + ".model.Account"), byClass.setterExceptions());
 	}
 
@@ -131,7 +135,7 @@ class SwitchableRulesTest {
 	}
 
 	@Test
-	void static_field_rule_allows_constants_enums_and_synthetic_fields() {
+	void static_field_rule_allows_constants_and_enums() {
 		assertDoesNotThrow(() -> baseline(CONSTANTS).check(imported(CONSTANTS)));
 	}
 

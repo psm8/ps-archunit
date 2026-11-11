@@ -62,7 +62,11 @@ public final class Main {
 					violations,
 					advisories));
 			return violations.isEmpty() ? 0 : 1;
-		} catch (IOException | RuntimeException | LinkageError failure) {
+		} catch (LinkageError failure) {
+			stderr.println("ps-archunit: cannot load consumer class " + message(failure)
+					+ "; add its dependencies with --classpath");
+			return 2;
+		} catch (IOException | RuntimeException failure) {
 			stderr.println("ps-archunit: " + message(failure));
 			return 2;
 		}

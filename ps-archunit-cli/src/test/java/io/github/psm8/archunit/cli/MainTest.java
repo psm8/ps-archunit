@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import javax.tools.ToolProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -142,11 +143,42 @@ class MainTest {
 					}
 				}
 				""");
-		int compiled = javax.tools.ToolProvider.getSystemJavaCompiler().run(
+		int compiled = ToolProvider.getSystemJavaCompiler().run(
 				null, null, null, "-d", classes.toString(), money.toString());
 		assertEquals(0, compiled);
 
 		Result result = run("domainOriented", "com.acme.isolated", classes);
+
+		assertEquals(0, result.exitCode(), result.stderr());
+	}
+
+	@Test
+	void interfaces_without_default_methods_need_no_resolvable_supertypes() throws Exception {
+		Path sources = Files.createTempDirectory("ps-archunit-sources-");
+		Path classes = Files.createTempDirectory("ps-archunit-classes-");
+		Path base = sources.resolve("org/lib/Base.java");
+		Path repository = sources.resolve("com/acme/unresolved/domain/Repository.java");
+		Files.createDirectories(base.getParent());
+		Files.createDirectories(repository.getParent());
+		Files.writeString(base, """
+				package org.lib;
+
+				public interface Base {
+				}
+				""");
+		Files.writeString(repository, """
+				package com.acme.unresolved.domain;
+
+				public interface Repository extends org.lib.Base {
+					long count();
+				}
+				""");
+		int compiled = ToolProvider.getSystemJavaCompiler().run(
+				null, null, null, "-d", classes.toString(), base.toString(), repository.toString());
+		assertEquals(0, compiled);
+		Files.delete(classes.resolve("org/lib/Base.class"));
+
+		Result result = run("domainOriented", "com.acme.unresolved", classes);
 
 		assertEquals(0, result.exitCode(), result.stderr());
 	}

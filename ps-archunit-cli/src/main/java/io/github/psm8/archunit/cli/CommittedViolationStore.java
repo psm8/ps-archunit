@@ -11,7 +11,7 @@ import java.util.Properties;
 
 /**
  * Violation store in a consumer-committed directory. It ignores ArchUnit's
- * global freeze configuration, never creates a missing store silently, and
+ * global store properties, never creates a missing store silently, and
  * re-records every rule when refreezing.
  */
 final class CommittedViolationStore implements ViolationStore {

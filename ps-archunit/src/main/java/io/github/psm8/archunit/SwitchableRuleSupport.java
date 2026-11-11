@@ -155,23 +155,30 @@ final class SwitchableRuleSupport {
 		};
 	}
 
+	private static boolean isDefaultMethod(JavaMethod method) {
+		Set<JavaModifier> modifiers = method.getModifiers();
+		return !modifiers.contains(JavaModifier.ABSTRACT)
+				&& !modifiers.contains(JavaModifier.STATIC)
+				&& !modifiers.contains(JavaModifier.PRIVATE)
+				&& !modifiers.contains(JavaModifier.SYNTHETIC);
+	}
+
 	private static ArchCondition<JavaClass> haveNoDefaultMethods() {
 		return new ArchCondition<>("have no default methods") {
 			@Override
 			public void check(JavaClass item, ConditionEvents events) {
-				if (item.isAnnotatedWith(FunctionalInterface.class)
+				List<JavaMethod> defaultMethods = item.getMethods().stream()
+						.filter(SwitchableRuleSupport::isDefaultMethod)
+						.toList();
+				// Reflection needs resolvable supertypes, so it runs only when needed.
+				if (defaultMethods.isEmpty()
+						|| item.isAnnotatedWith(FunctionalInterface.class)
 						|| item.reflect().isSealed()) {
 					return;
 				}
-				for (JavaMethod method : item.getMethods()) {
-					Set<JavaModifier> modifiers = method.getModifiers();
-					if (!modifiers.contains(JavaModifier.ABSTRACT)
-							&& !modifiers.contains(JavaModifier.STATIC)
-							&& !modifiers.contains(JavaModifier.PRIVATE)
-							&& !modifiers.contains(JavaModifier.SYNTHETIC)) {
-						events.add(SimpleConditionEvent.violated(method,
-								method.getFullName() + " is a default interface method"));
-					}
+				for (JavaMethod method : defaultMethods) {
+					events.add(SimpleConditionEvent.violated(method,
+							method.getFullName() + " is a default interface method"));
 				}
 			}
 		};
