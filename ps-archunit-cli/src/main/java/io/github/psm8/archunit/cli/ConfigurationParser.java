@@ -29,7 +29,8 @@ final class ConfigurationParser {
 			"configurationVisibility", "publicConfigurationClasses",
 			"publicConfigurationProperties",
 			"allowedApplicationInterfaceBeanTypes", "outputSuffix",
-			"setterMode", "setterExceptions", "staticFieldMode", "staticFieldExceptions");
+			"setterMode", "setterExceptions", "staticFieldMode", "staticFieldExceptions",
+			"beanCreationMode", "beanCreationExceptions", "builderMode", "builderExceptions");
 	private static final List<String> DOMAIN_KEYS = List.of(
 			"domain", "applicationPackages", "apiPackages", "infrastructurePackages",
 			"sharedLibPackages", "domainModelFrameworkPackages", "frameworkDependencyPackages",
@@ -154,6 +155,12 @@ final class ConfigurationParser {
 		applyRuleMode(replace, "staticFieldMode", builder::staticFieldMode);
 		applyCombinedPatterns(replace, append, "staticFieldExceptions",
 				builder::staticFieldExceptions);
+		applyRuleMode(replace, "beanCreationMode", builder::beanCreationMode);
+		applyCombinedPatterns(replace, append, "beanCreationExceptions",
+				builder::beanCreationExceptions);
+		applyRuleMode(replace, "builderMode", builder::builderMode);
+		applyCombinedPatterns(replace, append, "builderExceptions",
+				builder::builderExceptions);
 	}
 
 	private void applyDomain(
@@ -295,7 +302,7 @@ final class ConfigurationParser {
 		for (String key : List.of(
 				"configurationVisibility", "outputSuffix", "transactionAnnotation", "useCaseSuffix",
 				"portSuffix", "adapterSuffix", "setterMode", "staticFieldMode",
-				"defaultMethodMode")) {
+				"defaultMethodMode", "beanCreationMode", "builderMode")) {
 			if (append.containsKey(key)) {
 				throw new ConfigurationException(key + " supports replace only");
 			}

@@ -26,7 +26,7 @@ class MainTest {
 
 		assertEquals(0, exitCode);
 		assertTrue(output.toString().contains("unknown")
-				|| output.toString().contains("0.4.0"));
+				|| output.toString().contains("0.5.0"));
 	}
 
 	@Test

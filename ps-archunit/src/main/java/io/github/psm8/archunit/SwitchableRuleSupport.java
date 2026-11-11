@@ -32,6 +32,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  */
 final class SwitchableRuleSupport {
 	private static final Pattern SETTER_NAME = Pattern.compile("set[A-Z].*");
+	private static final String COMPONENT = "org.springframework.stereotype.Component";
+	private static final String SERVICE = "org.springframework.stereotype.Service";
+	private static final String COMPONENT_SCAN =
+			"org.springframework.context.annotation.ComponentScan";
 
 	private SwitchableRuleSupport() {
 	}
@@ -44,6 +48,7 @@ final class SwitchableRuleSupport {
 		return classes().that()
 				.resideInAnyPackage(layout.basePackage() + "..")
 				.and(notExcepted(layout.setterExceptions()))
+				.and(DescribedPredicate.not(builderType()))
 				.should(haveNoSetters(layout.basePackage()))
 				.as("classes under " + layout.basePackage() + " have no setters")
 				.because("mutable state should change through behavior, not setters")
@@ -57,6 +62,27 @@ final class SwitchableRuleSupport {
 				.should(haveNoStaticNonFinalFields())
 				.as("classes under " + layout.basePackage() + " have no static non-final fields")
 				.because("static non-final fields are shared mutable global state")
+				.allowEmptyShould(true);
+	}
+
+	static ArchRule beanCreationRule(BaselineLayout layout) {
+		return classes().that()
+				.resideInAnyPackage(layout.basePackage() + "..")
+				.and().areNotAnnotations()
+				.and(notExcepted(layout.beanCreationExceptions()))
+				.should(beCreatedExplicitly())
+				.as("classes under " + layout.basePackage() + " are not found by component scanning")
+				.because("beans are created explicitly by @Bean methods or @Import")
+				.allowEmptyShould(true);
+	}
+
+	static ArchRule builderRule(BaselineLayout layout) {
+		return classes().that()
+				.resideInAnyPackage(layout.basePackage() + "..")
+				.and(notExcepted(layout.builderExceptions()))
+				.should(notBeBuilders())
+				.as("classes under " + layout.basePackage() + " are not builders")
+				.because("a constructor or factory method is usually enough to construct an object")
 				.allowEmptyShould(true);
 	}
 
@@ -215,6 +241,71 @@ final class SwitchableRuleSupport {
 			pending.addAll(List.of(current.getInterfaces()));
 		}
 		return false;
+	}
+
+	private static ArchCondition<JavaClass> beCreatedExplicitly() {
+		return new ArchCondition<>("be created explicitly") {
+			@Override
+			public void check(JavaClass item, ConditionEvents events) {
+				String name = item.getName();
+				if (item.isAnnotatedWith(COMPONENT) || item.isAnnotatedWith(SERVICE)) {
+					String annotation = item.isAnnotatedWith(SERVICE) ? "@Service" : "@Component";
+					events.add(SimpleConditionEvent.violated(item, name + " is annotated with "
+							+ annotation + "; register it with a @Bean method in a @Configuration class"));
+				}
+				if (item.isAnnotatedWith(COMPONENT_SCAN)) {
+					events.add(SimpleConditionEvent.violated(item, name
+							+ " enables component scanning; register beans with @Bean methods or @Import"));
+				}
+				if (item.isAnnotatedWith(ArchitectureRuleSupport.SPRING_BOOT_APPLICATION)) {
+					events.add(SimpleConditionEvent.violated(item, name
+							+ " enables component scanning through @SpringBootApplication;"
+							+ " use @SpringBootConfiguration with @EnableAutoConfiguration"));
+				}
+			}
+		};
+	}
+
+	private static ArchCondition<JavaClass> notBeBuilders() {
+		return new ArchCondition<>("not be builders") {
+			@Override
+			public void check(JavaClass item, ConditionEvents events) {
+				if (item.getSimpleName().endsWith("Builder") || isBuilderType(item)) {
+					events.add(SimpleConditionEvent.violated(item, item.getName()
+							+ " is a builder; prefer a constructor or factory method"));
+				}
+			}
+		};
+	}
+
+	private static DescribedPredicate<JavaClass> builderType() {
+		return DescribedPredicate.describe("builder types", SwitchableRuleSupport::isBuilderType);
+	}
+
+	/**
+	 * A builder type has a {@code build()} method that returns another type and
+	 * at least one fluent method that returns the type itself.
+	 */
+	private static boolean isBuilderType(JavaClass type) {
+		boolean builds = false;
+		boolean fluent = false;
+		for (JavaMethod method : type.getMethods()) {
+			Set<JavaModifier> modifiers = method.getModifiers();
+			if (modifiers.contains(JavaModifier.STATIC)
+					|| modifiers.contains(JavaModifier.SYNTHETIC)
+					|| modifiers.contains(JavaModifier.BRIDGE)) {
+				continue;
+			}
+			boolean returnsItself = method.getRawReturnType().equals(type);
+			if (method.getName().equals("build")
+					&& method.getRawParameterTypes().isEmpty()
+					&& !returnsItself) {
+				builds = true;
+			} else if (returnsItself) {
+				fluent = true;
+			}
+		}
+		return builds && fluent;
 	}
 
 	private static ArchCondition<JavaClass> haveNoStaticNonFinalFields() {

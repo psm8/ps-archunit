@@ -54,7 +54,11 @@ public final class BaselineArchitectureRules {
 				SwitchableRuleSupport.select(layout.setterMode(), mode,
 						() -> SwitchableRuleSupport.setterRule(layout)),
 				SwitchableRuleSupport.select(layout.staticFieldMode(), mode,
-						() -> SwitchableRuleSupport.staticFieldRule(layout))));
+						() -> SwitchableRuleSupport.staticFieldRule(layout)),
+				SwitchableRuleSupport.select(layout.beanCreationMode(), mode,
+						() -> SwitchableRuleSupport.beanCreationRule(layout)),
+				SwitchableRuleSupport.select(layout.builderMode(), mode,
+						() -> SwitchableRuleSupport.builderRule(layout))));
 	}
 
 	private static ArchRule cycleRules(BaselineLayout layout) {
@@ -130,19 +134,13 @@ public final class BaselineArchitectureRules {
 	}
 
 	private static ArchRule beanRules(BaselineLayout layout) {
-		return CompositeArchRule.of(methods()
-						.that().areAnnotatedWith(ArchitectureRuleSupport.BEAN)
-						.should().beDeclaredInClassesThat()
-						.areAnnotatedWith(ArchitectureRuleSupport.CONFIGURATION)
-						.as("@Bean methods belong in explicit configuration")
-						.allowEmptyShould(true))
-				.and(methods()
-						.that().areAnnotatedWith(ArchitectureRuleSupport.BEAN)
-						.should(ArchitectureRuleSupport.haveValidBeanExposure(
-								layout.basePackage(),
-								layout.allowedApplicationInterfaceBeanTypes()))
-						.as("@Bean methods expose concrete types or explicitly allowed contracts")
-						.allowEmptyShould(true));
+		return methods()
+				.that().areAnnotatedWith(ArchitectureRuleSupport.BEAN)
+				.should(ArchitectureRuleSupport.haveValidBeanExposure(
+						layout.basePackage(),
+						layout.allowedApplicationInterfaceBeanTypes()))
+				.as("@Bean methods expose concrete types or explicitly allowed contracts")
+				.allowEmptyShould(true);
 	}
 
 	private static ArchRule outputShape(BaselineLayout layout) {

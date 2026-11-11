@@ -34,7 +34,7 @@ Artifact coordinates:
 <dependency>
     <groupId>io.github.psm8</groupId>
     <artifactId>ps-archunit</artifactId>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -45,7 +45,7 @@ architecture tests.
 
 The repository also publishes `ps-archunit-cli`. The CLI owns YAML parsing;
 SnakeYAML is not a dependency of the core `ps-archunit` JAR.
-CLI coordinates: `io.github.psm8:ps-archunit-cli:0.4.0`.
+CLI coordinates: `io.github.psm8:ps-archunit-cli:0.5.0`.
 
 ## Architecture verification CLI
 
@@ -79,7 +79,7 @@ hexagonal:
 Run it against compiled bytecode:
 
 ```shell
-java -jar ps-archunit-cli/target/ps-archunit-cli-0.4.0-all.jar \
+java -jar ps-archunit-cli/target/ps-archunit-cli-0.5.0-all.jar \
   --config architecture.yml \
   --classes target/classes \
   --classpath dependency-a.jar \
@@ -107,7 +107,7 @@ store and fails only on new ones. Commit the store directory to the consumer
 repository. Create or re-record it explicitly with `--refreeze`:
 
 ```shell
-java -jar ps-archunit-cli-0.4.0-all.jar --config architecture.yml \
+java -jar ps-archunit-cli-0.5.0-all.jar --config architecture.yml \
   --freeze-store architecture-store --refreeze
 ```
 
@@ -144,10 +144,14 @@ replace:
   setterMode: fail            # default: advisory
   staticFieldMode: fail       # default: fail
   defaultMethodMode: advisory # default: fail; domainOriented and hexagonal only
+  builderMode: fail           # default: advisory
+  beanCreationMode: advisory  # default: off / advisory / fail by tier
 append:
   setterExceptions: ["{base}.config.LegacyProperties", "{base}.legacy.."]
   staticFieldExceptions: []
   defaultMethodExceptions: []
+  builderExceptions: []
+  beanCreationExceptions: ["{base}.OrdersApplication"]
 ```
 
 Exit codes:
@@ -162,9 +166,9 @@ coordinates and `all` classifier:
 ```shell
 mkdir -p target/ps-archunit
 mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-  -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all \
+  -Dartifact=io.github.psm8:ps-archunit-cli:0.5.0:jar:all \
   -DoutputDirectory=target/ps-archunit
-java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar \
+java -jar target/ps-archunit/ps-archunit-cli-0.5.0-all.jar \
   --config architecture.yml
 ```
 
@@ -175,9 +179,9 @@ GitHub Actions example (add to a consumer workflow):
   run: |
     mkdir -p target/ps-archunit
     mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy \
-      -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all \
+      -Dartifact=io.github.psm8:ps-archunit-cli:0.5.0:jar:all \
       -DoutputDirectory=target/ps-archunit
-    java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar \
+    java -jar target/ps-archunit/ps-archunit-cli-0.5.0-all.jar \
       --config architecture.yml
 ```
 
@@ -188,13 +192,13 @@ architecture:
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - mkdir -p target/ps-archunit
-    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.4.0:jar:all -DoutputDirectory=target/ps-archunit
-    - java -jar target/ps-archunit/ps-archunit-cli-0.4.0-all.jar --config architecture.yml
+    - mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy -Dartifact=io.github.psm8:ps-archunit-cli:0.5.0:jar:all -DoutputDirectory=target/ps-archunit
+    - java -jar target/ps-archunit/ps-archunit-cli-0.5.0-all.jar --config architecture.yml
 ```
 
 The snippets are consumer-side examples. Release publishing is handled by
 `.github/workflows/publish-release.yml` when a GitHub Release is published
-with a `v0.4.0` tag.
+with a `v0.5.0` tag.
 
 ## Consumer package contract
 
@@ -415,7 +419,7 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
   enforcement;
 - package-private internal `@ConfigurationProperties` classes;
 - lite Spring configuration (`proxyBeanMethods = false`);
-- `@Bean` placement and declared return-type exposure policy;
+- declared return-type exposure policy for `@Bean` methods;
 - record or sealed-interface boundary outputs;
 - switchable: no static non-final fields (default `FAIL`). The CLI also reads
   `target/test-classes` by default; exempt test fixtures with a pattern such
@@ -434,7 +438,21 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
   precise result. An abstract fluent method in the base package is not
   reported, so its implementations are. Supertypes excluded by
   `setterExceptions`, or not imported in a JUnit test, hide the setters that
-  override them. Builders that assign fields fluently are reported too.
+  override them. Builder types are not checked for setters; the builder rule
+  reports them;
+- switchable: no builders (default `ADVISORY`). A builder type has a
+  `build()` method that returns another type and at least one fluent method
+  that returns the type itself, as Lombok `@Builder` generates. A class whose
+  simple name ends in `Builder` is reported too, because the name promises
+  the design pattern. Each is reported once: prefer a constructor or factory
+  method (see [ADR 0009](docs/adr/0009-builder-rule.md));
+- switchable: beans are created explicitly (default `OFF` at Level 1,
+  `ADVISORY` at Level 2, `FAIL` at Level 3). Classes directly annotated with
+  `@Component`, `@Service`, `@ComponentScan`, or `@SpringBootApplication` are
+  reported with the change that fixes them. Annotations that only build on
+  `@Component`, such as `@Configuration`, `@RestController`, `@Repository`, or
+  your own stereotypes, are not reported (see
+  [ADR 0008](docs/adr/0008-bean-creation-rule.md)).
 
 ### Level 2: `domainOriented`
 
@@ -467,7 +485,7 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - composition-root exemptions are source-local for classification completeness,
   domain direction, onion direction, package cycles, and framework assembly;
   referenced targets and all non-root classes remain checked;
-- explicit dependency bans, bean placement and exposure, configuration
+- explicit dependency bans, bean exposure, configuration
   visibility, `proxyBeanMethods`, transaction placement, and port/adapter rules
   remain active;
 - framework-free public port signatures, including parameter declaration
@@ -482,8 +500,8 @@ BaselineLayout layout = BaselineLayout.builder("com.acme.orders")
 - every class under the base package belongs to at least one effective
   architecture group, including declared groups and adapter groups.
 
-Component annotations are not package-layout selectors and do not trigger a
-separate selector rule.
+Component annotations are not package-layout selectors. The bean creation
+rule reports `@Component` and `@Service`, but does not classify classes.
 
 ### Switchable rules
 
@@ -500,8 +518,15 @@ HexagonalLayout layout = HexagonalLayout.builder("com.acme.orders")
     .setterExceptions("{base}.config.LegacyProperties", "{base}.legacy..")
     .staticFieldMode(RuleMode.ADVISORY)
     .defaultMethodMode(RuleMode.OFF)
+    .beanCreationMode(RuleMode.ADVISORY)
+    .beanCreationExceptions("{base}.OrdersApplication")
+    .builderExceptions("{base}..*TestDataBuilder")
     .build();
 ```
+
+Every switchable rule has the same default mode at every level, except the
+bean creation rule: a layout that does not configure `beanCreationMode` uses
+the default of its level, also after promotion to a higher level.
 
 ## Use in tests
 
@@ -566,8 +591,8 @@ The POM contains Java 21, source/Javadoc, license, SCM, and Maven Central
 metadata. Release profile `release` signs every artifact with GPG and publishes
 through the Sonatype Central Portal.
 
-The current release is `0.4.0`. Publish it by creating a GitHub Release with
-tag `v0.4.0`. The publishing workflow requires these repository secrets:
+The current release is `0.5.0`. Publish it by creating a GitHub Release with
+tag `v0.5.0`. The publishing workflow requires these repository secrets:
 
 - `MAVEN_CENTRAL_USERNAME`: Central Portal user-token username;
 - `MAVEN_CENTRAL_TOKEN`: Central Portal user-token password;

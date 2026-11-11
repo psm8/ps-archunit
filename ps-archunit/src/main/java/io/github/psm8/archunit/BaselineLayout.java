@@ -23,6 +23,11 @@ public final class BaselineLayout {
 	private final List<String> setterExceptions;
 	private final RuleMode staticFieldMode;
 	private final List<String> staticFieldExceptions;
+	private final RuleMode beanCreationMode;
+	private final boolean beanCreationModeConfigured;
+	private final List<String> beanCreationExceptions;
+	private final RuleMode builderMode;
+	private final List<String> builderExceptions;
 
 	private BaselineLayout(Builder builder) {
 		basePackage = builder.basePackage;
@@ -39,6 +44,13 @@ public final class BaselineLayout {
 		setterExceptions = LayoutSupport.resolvePatterns(builder.setterExceptions, basePackage);
 		staticFieldMode = builder.staticFieldMode;
 		staticFieldExceptions = LayoutSupport.resolvePatterns(builder.staticFieldExceptions, basePackage);
+		beanCreationModeConfigured = builder.beanCreationMode != null;
+		beanCreationMode = beanCreationModeConfigured
+				? builder.beanCreationMode
+				: builder.levelBeanCreationMode;
+		beanCreationExceptions = LayoutSupport.resolvePatterns(builder.beanCreationExceptions, basePackage);
+		builderMode = builder.builderMode;
+		builderExceptions = LayoutSupport.resolvePatterns(builder.builderExceptions, basePackage);
 	}
 
 	public static Builder builder(String basePackage) {
@@ -54,7 +66,7 @@ public final class BaselineLayout {
 	}
 
 	public Builder toBuilder() {
-		return builder(basePackage)
+		Builder copy = builder(basePackage)
 				.outputs(outputs.toArray(String[]::new))
 				.dependencyBans(dependencyBans.toArray(DependencyBan[]::new))
 				.cyclePatterns(cyclePatterns.toArray(String[]::new))
@@ -69,7 +81,14 @@ public final class BaselineLayout {
 				.setterMode(setterMode)
 				.setterExceptions(setterExceptions.toArray(String[]::new))
 				.staticFieldMode(staticFieldMode)
-				.staticFieldExceptions(staticFieldExceptions.toArray(String[]::new));
+				.staticFieldExceptions(staticFieldExceptions.toArray(String[]::new))
+				.beanCreationExceptions(beanCreationExceptions.toArray(String[]::new))
+				.builderMode(builderMode)
+				.builderExceptions(builderExceptions.toArray(String[]::new));
+		if (beanCreationModeConfigured) {
+			copy.beanCreationMode(beanCreationMode);
+		}
+		return copy;
 	}
 
 	public String basePackage() {
@@ -128,6 +147,26 @@ public final class BaselineLayout {
 		return staticFieldExceptions;
 	}
 
+	/**
+	 * Returns the configured mode, or the default of the layout's level: off at
+	 * Level 1, advisory at Level 2, and fail at Level 3.
+	 */
+	public RuleMode beanCreationMode() {
+		return beanCreationMode;
+	}
+
+	public List<String> beanCreationExceptions() {
+		return beanCreationExceptions;
+	}
+
+	public RuleMode builderMode() {
+		return builderMode;
+	}
+
+	public List<String> builderExceptions() {
+		return builderExceptions;
+	}
+
 	public record DependencyBan(
 			List<String> sourcePackages,
 			List<String> bannedPackages,
@@ -181,6 +220,11 @@ public final class BaselineLayout {
 		private final List<String> setterExceptions = new ArrayList<>();
 		private RuleMode staticFieldMode = RuleMode.FAIL;
 		private final List<String> staticFieldExceptions = new ArrayList<>();
+		private RuleMode beanCreationMode;
+		private RuleMode levelBeanCreationMode = RuleMode.OFF;
+		private final List<String> beanCreationExceptions = new ArrayList<>();
+		private RuleMode builderMode = RuleMode.ADVISORY;
+		private final List<String> builderExceptions = new ArrayList<>();
 		private boolean outputsConfigured;
 
 		private Builder(String basePackage) {
@@ -273,6 +317,31 @@ public final class BaselineLayout {
 
 		public Builder staticFieldExceptions(String... values) {
 			LayoutSupport.replacePatterns(staticFieldExceptions, values);
+			return this;
+		}
+
+		public Builder beanCreationMode(RuleMode value) {
+			beanCreationMode = Objects.requireNonNull(value, "beanCreationMode");
+			return this;
+		}
+
+		Builder levelBeanCreationMode(RuleMode value) {
+			levelBeanCreationMode = value;
+			return this;
+		}
+
+		public Builder beanCreationExceptions(String... values) {
+			LayoutSupport.replacePatterns(beanCreationExceptions, values);
+			return this;
+		}
+
+		public Builder builderMode(RuleMode value) {
+			builderMode = Objects.requireNonNull(value, "builderMode");
+			return this;
+		}
+
+		public Builder builderExceptions(String... values) {
+			LayoutSupport.replacePatterns(builderExceptions, values);
 			return this;
 		}
 

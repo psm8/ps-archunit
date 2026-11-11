@@ -333,8 +333,11 @@ class ArchitectureRuleTiersTest {
 	@Test
 	void hexagonal_recognizes_direct_and_meta_annotated_boot_composition_roots() {
 		String basePackage = "io.github.psm8.archunit.fixtures.composition.boot";
+		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
+				.beanCreationMode(RuleMode.OFF)
+				.build();
 
-		assertDoesNotThrow(() -> hexagonal(basePackage).check(imported(basePackage)));
+		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));
 	}
 
 	@Test
@@ -1119,6 +1122,7 @@ class ArchitectureRuleTiersTest {
 		String basePackage = "io.github.psm8.archunit.fixtures.component";
 		HexagonalLayout layout = HexagonalLayout.builder(basePackage)
 				.infrastructurePackages(basePackage + ".scanned..")
+				.beanCreationMode(RuleMode.OFF)
 				.build();
 
 		assertDoesNotThrow(() -> hexagonal(layout).check(imported(basePackage)));

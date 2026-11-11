@@ -82,6 +82,38 @@ class CliConfigurationTest {
 	}
 
 	@Test
+	void bean_creation_mode_keeps_the_level_default_unless_configured() {
+		String levelDefault = """
+				schemaVersion: 1
+				tier: hexagonal
+				basePackage: com.acme.orders
+				""";
+		String configured = """
+				schemaVersion: 1
+				tier: hexagonal
+				basePackage: com.acme.orders
+				replace:
+				  beanCreationMode: advisory
+				  builderMode: fail
+				append:
+				  beanCreationExceptions: ["{base}.OrdersApplication"]
+				  builderExceptions: ["{base}..*Builder"]
+				""";
+
+		HexagonalLayout defaults =
+				(HexagonalLayout) new ConfigurationParser().parse(levelDefault).layout();
+		HexagonalLayout layout =
+				(HexagonalLayout) new ConfigurationParser().parse(configured).layout();
+
+		assertEquals(RuleMode.FAIL, defaults.beanCreationMode());
+		assertEquals(RuleMode.ADVISORY, defaults.builderMode());
+		assertEquals(RuleMode.ADVISORY, layout.beanCreationMode());
+		assertEquals(RuleMode.FAIL, layout.builderMode());
+		assertEquals(List.of("com.acme.orders.OrdersApplication"), layout.beanCreationExceptions());
+		assertEquals(List.of("com.acme.orders..*Builder"), layout.builderExceptions());
+	}
+
+	@Test
 	void rejects_unknown_configuration_keys_before_layout_creation() {
 		String yaml = """
 				schemaVersion: 1

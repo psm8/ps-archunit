@@ -167,6 +167,22 @@ public final class HexagonalLayout {
 		return domainOriented.setterMode();
 	}
 
+	public RuleMode beanCreationMode() {
+		return domainOriented.beanCreationMode();
+	}
+
+	public List<String> beanCreationExceptions() {
+		return domainOriented.beanCreationExceptions();
+	}
+
+	public RuleMode builderMode() {
+		return domainOriented.builderMode();
+	}
+
+	public List<String> builderExceptions() {
+		return domainOriented.builderExceptions();
+	}
+
 	public List<String> setterExceptions() {
 		return domainOriented.setterExceptions();
 	}
@@ -348,6 +364,26 @@ public final class HexagonalLayout {
 
 		public Builder setterMode(RuleMode value) {
 			domainOriented.setterMode(value);
+			return this;
+		}
+
+		public Builder beanCreationMode(RuleMode value) {
+			domainOriented.beanCreationMode(value);
+			return this;
+		}
+
+		public Builder beanCreationExceptions(String... values) {
+			domainOriented.beanCreationExceptions(values);
+			return this;
+		}
+
+		public Builder builderMode(RuleMode value) {
+			domainOriented.builderMode(value);
+			return this;
+		}
+
+		public Builder builderExceptions(String... values) {
+			domainOriented.builderExceptions(values);
 			return this;
 		}
 
@@ -553,6 +589,7 @@ public final class HexagonalLayout {
 			useCaseSuffix = LayoutSupport.defaultText(useCaseSuffix, "UseCase");
 			portSuffix = LayoutSupport.defaultText(portSuffix, "Port");
 			adapterSuffix = LayoutSupport.defaultText(adapterSuffix, "Adapter");
+			domainOriented.levelBeanCreationMode(RuleMode.FAIL);
 			return new HexagonalLayout(this);
 		}
 

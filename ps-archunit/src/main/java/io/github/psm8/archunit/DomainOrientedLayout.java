@@ -150,6 +150,22 @@ public final class DomainOrientedLayout {
 		return baseline.staticFieldExceptions();
 	}
 
+	public RuleMode beanCreationMode() {
+		return baseline.beanCreationMode();
+	}
+
+	public List<String> beanCreationExceptions() {
+		return baseline.beanCreationExceptions();
+	}
+
+	public RuleMode builderMode() {
+		return baseline.builderMode();
+	}
+
+	public List<String> builderExceptions() {
+		return baseline.builderExceptions();
+	}
+
 	public RuleMode defaultMethodMode() {
 		return defaultMethodMode;
 	}
@@ -218,6 +234,7 @@ public final class DomainOrientedLayout {
 		private String transactionAnnotation;
 		private RuleMode defaultMethodMode = RuleMode.FAIL;
 		private final List<String> defaultMethodExceptions = new ArrayList<>();
+		private RuleMode levelBeanCreationMode = RuleMode.ADVISORY;
 		private boolean domainConfigured;
 		private boolean applicationConfigured;
 		private boolean apiConfigured;
@@ -308,6 +325,31 @@ public final class DomainOrientedLayout {
 
 		public Builder staticFieldExceptions(String... values) {
 			baseline.staticFieldExceptions(values);
+			return this;
+		}
+
+		public Builder beanCreationMode(RuleMode value) {
+			baseline.beanCreationMode(value);
+			return this;
+		}
+
+		Builder levelBeanCreationMode(RuleMode value) {
+			levelBeanCreationMode = value;
+			return this;
+		}
+
+		public Builder beanCreationExceptions(String... values) {
+			baseline.beanCreationExceptions(values);
+			return this;
+		}
+
+		public Builder builderMode(RuleMode value) {
+			baseline.builderMode(value);
+			return this;
+		}
+
+		public Builder builderExceptions(String... values) {
+			baseline.builderExceptions(values);
 			return this;
 		}
 
@@ -485,6 +527,7 @@ public final class DomainOrientedLayout {
 						"javax.xml.ws..",
 						"com.fasterxml.jackson..");
 			}
+			baseline.levelBeanCreationMode(levelBeanCreationMode);
 			for (String modelFrameworkPackage : domainModelFrameworkPackages) {
 				if (!frameworkDependencyPackages.contains(modelFrameworkPackage)) {
 					frameworkDependencyPackages.add(modelFrameworkPackage);

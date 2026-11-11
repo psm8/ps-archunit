@@ -449,6 +449,7 @@ final class ArchitectureRuleSupport {
 				.replace("..", "\u0000")
 				.replace("*", "\u0001")
 				.replace(".", "\\.")
+				.replace("$", "\\$")
 				.replace("\u0000", ".*")
 				.replace("\u0001", "[^.]*");
 		return value.matches(regex);
